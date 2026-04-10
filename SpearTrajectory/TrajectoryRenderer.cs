@@ -25,7 +25,7 @@ namespace SpearTrajectory
         // airDragFactor de la lanza = 0.25 (default del json de la lanza)
         public double GravityPerSecond = GlobalConstants.GravityPerSecond * 0.75;
         public double AirDragValue = 1 - (1 - GlobalConstants.AirDragAlways) * 0.25;
-        public float Velocity = 0.99f;
+        public float Velocity = 1f;
         public float DeltaTime = 1f / 60f; // tick fijo del servidor
         public int MaxSteps = 400;
     }
@@ -42,7 +42,13 @@ namespace SpearTrajectory
             var result = new TrajectoryResult();
 
             Vec3d pos = startPos.Clone();
-            Vec3d motion = direction.Clone().Mul(physics.Velocity - 0.01);
+            ItemSlot slot = player.InventoryManager.ActiveHotbarSlot;
+            double velocityDecrease = 0;
+            if (slot?.Itemstack?.Item is not ItemSpear && slot?.Itemstack?.Item.FirstCodePart(0) is "spear") // combat overhaul trajectory velocity stat fix
+                velocityDecrease = 0.1;
+            else
+                velocityDecrease = 0;
+            Vec3d motion = direction.Clone().Mul(physics.Velocity - velocityDecrease);
 
             result.Points.Add(pos.Clone());
 
@@ -122,6 +128,7 @@ namespace SpearTrajectory
     //draws the trajectory lines
     public static class TrajectoryLineRenderer
     {
+
         private const int DashLength = 3;
         private const int GapLength = 3;
         private const int SkipPoints = 3;
@@ -135,6 +142,7 @@ namespace SpearTrajectory
             bool hitEntity = false,
             int dashOffset = 0)
         {
+            
             int colorWhite = hitEntity
                 ? ColorUtil.ToRgba(255, 0, 0, 255)
                 : ColorUtil.ToRgba(255, 255, 255, 255);
@@ -149,6 +157,7 @@ namespace SpearTrajectory
 
             for (int i = 1; i < points.Count; i++)
             {
+                
                 if (i <= SkipPoints) continue;
 
                 int cycle = ((i - 1) + dashOffset) % (DashLength + GapLength);
@@ -284,13 +293,15 @@ namespace SpearTrajectory
 
         public void OnRenderFrame(float deltaTime, EnumRenderStage stage)
         {
+
+            
             IPlayer player = capi.World.Player;
             if (player?.Entity == null) return;
             if (!capi.Input.MouseButton.Right) return;
-
+            
             ItemSlot slot = player.InventoryManager.ActiveHotbarSlot;
-            if (slot?.Itemstack?.Item is not ItemSpear) return;
 
+            if (slot?.Itemstack?.Item.FirstCodePart(0) is not "spear") return; //TO-DO: Use Item is not ItemSpear when not using CO, and use specific spear type when using CO.
             // — REEMPLAZA todo el cálculo manual de startPos/dir —
             var (startPos, dirVec, speed) = PatchAimingData.GetRealProjectileDirection(
     player.Entity as EntityAgent);
@@ -300,9 +311,13 @@ namespace SpearTrajectory
             // ——————————————————————————————————————————————————
 
             float accuracy = player.Entity.Attributes.GetFloat("aimingAccuracy", 0f);
-            float radius = MinRadius + (1f - accuracy) * (MaxRadius - MinRadius);
+            float radius = 1;
+            if (accuracy != 0)
+            {
+                radius = MinRadius + (1f - accuracy) * (MaxRadius - MinRadius);
+            }
 
-            TrajectoryResult result = TrajectoryCalculator.Simulate(
+                TrajectoryResult result = TrajectoryCalculator.Simulate(
     capi, startPos, dirVec, physics, player);  // dirVec directamente
 
             // Para el renderer de líneas necesitás Vec3f del view vector solo para el outline
