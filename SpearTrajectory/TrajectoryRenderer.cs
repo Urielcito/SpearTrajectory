@@ -20,13 +20,11 @@ namespace SpearTrajectory
     //phys params
     public class TrajectoryPhysics
     {
-        // Valores exactos del juego via GlobalConstants
-        // gravityFactor de la lanza = 0.75 (default de EntityBehaviorPassivePhysics)
-        // airDragFactor de la lanza = 0.25 (default del json de la lanza)
+        
         public double GravityPerSecond = GlobalConstants.GravityPerSecond * 0.75;
         public double AirDragValue = 1 - (1 - GlobalConstants.AirDragAlways) * 0.25;
         public float Velocity = 1f;
-        public float DeltaTime = 1f / 60f; // tick fijo del servidor
+        public float DeltaTime = 1f / 60f; 
         public int MaxSteps = 400;
     }
 
@@ -35,13 +33,14 @@ namespace SpearTrajectory
         public static TrajectoryResult Simulate(
             ICoreClientAPI capi,
             Vec3d startPos,
-            Vec3d direction,       // ahora Vec3d en lugar de Vec3f
+            Vec3d direction,       
             TrajectoryPhysics physics,
             IPlayer player)
         {
             var result = new TrajectoryResult();
 
             Vec3d pos = startPos.Clone();
+            pos.Z -= 0.2;
             ItemSlot slot = player.InventoryManager.ActiveHotbarSlot;
             double velocityDecrease = 0;
             if (slot?.Itemstack?.Item is not ItemSpear && slot?.Itemstack?.Item.FirstCodePart(0) is "spear") // combat overhaul trajectory velocity stat fix
@@ -53,38 +52,34 @@ namespace SpearTrajectory
             result.Points.Add(pos.Clone());
 
             float dt = physics.DeltaTime;
-            float dtFactor = 60f * dt;  // = 1.0 con dt=1/60
+            float dtFactor = 60f * dt;  
 
             for (int i = 0; i < physics.MaxSteps; i++)
             {
-                // 1. Air drag — exacto del juego
                 double drag = Math.Pow(physics.AirDragValue, dt * 33);
                 motion.X *= drag;
                 motion.Y *= drag;
                 motion.Z *= drag;
 
-                // 2. Gravedad — exacta del juego
                 double gravityStrength = physics.GravityPerSecond / 60f * dtFactor;
                 motion.Y -= gravityStrength;
 
-                // 3. Nueva posición
                 Vec3d nextPos = new Vec3d(
                     pos.X + motion.X * dtFactor,
                     pos.Y + motion.Y * dtFactor,
                     pos.Z + motion.Z * dtFactor);
 
-                // 4. Colisión con bloques — usando selection box real
+                // block collision
                 BlockPos bpos = nextPos.AsBlockPos;
                 Block block = capi.World.BlockAccessor.GetBlock(bpos);
 
                 if (block != null && block.BlockId != 0 && block.CollisionBoxes != null && block.CollisionBoxes.Length > 0)
                 {
-                    // Verificar que alguna caja realmente intersecta
                     bool solidHit = false;
                     foreach (var box in block.CollisionBoxes)
                     {
                         Cuboidd worldBox = box.ToDouble().Translate(bpos.X, bpos.Y, bpos.Z);
-                        // Punto de la lanza como cuboid pequeño
+
                         Cuboidd projBox = new Cuboidd(
                             nextPos.X - 0.05, nextPos.Y - 0.05, nextPos.Z - 0.05,
                             nextPos.X + 0.05, nextPos.Y + 0.05, nextPos.Z + 0.05);
@@ -104,7 +99,7 @@ namespace SpearTrajectory
                     }
                 }
 
-                // 5. Colisión con entidades
+                // entity collision
                 Entity[] nearby = capi.World.GetEntitiesAround(
                     nextPos, 0.5f, 0.5f,
                     e => e != player.Entity && e.IsInteractable && e is EntityAgent);
@@ -154,13 +149,12 @@ namespace SpearTrajectory
             Vec3d oUp = vd.Cross(oRight).Normalize().Mul(outlineSize);
 
             Vec3d originVec = origin.ToVec3d();
-
             for (int i = 1; i < points.Count; i++)
             {
                 
                 if (i <= SkipPoints) continue;
 
-                int cycle = ((i - 1) + dashOffset) % (DashLength + GapLength);
+                int cycle = ((i - 1) + dashOffset) % (DashLength + (GapLength));
                 if (cycle >= DashLength) continue;
 
                 Vec3d a = points[i - 1] - originVec;
@@ -209,7 +203,8 @@ namespace SpearTrajectory
             IPlayer player,
             bool hitEntity,
             float angleOffset,
-            float outlineSize)
+            float outlineSize,
+            int opacity)
         {
             Vec3d camPos = player.Entity.Pos.XYZ.AddCopy(0, eyePos.Y, 0);
             Vec3d toImpact = impactPoint.SubCopy(camPos).Normalize();
@@ -218,9 +213,9 @@ namespace SpearTrajectory
             Vec3d billUp = billRight.Cross(toImpact).Normalize();
 
             int colorFill = hitEntity
-                ? ColorUtil.ToRgba(255, 0, 0, 255)
-                : ColorUtil.ToRgba(255, 255, 255, 255);
-            int colorBlack = ColorUtil.ToRgba(255, 0, 0, 0);
+                ? ColorUtil.ToRgba(opacity, 0, 0, 255)
+                : ColorUtil.ToRgba(opacity, 255, 255, 255);
+            int colorBlack = ColorUtil.ToRgba(opacity, 0, 0, 0);
 
             float usedAngleOffset = hitEntity ? angleOffset : 0f;
 
@@ -275,6 +270,7 @@ namespace SpearTrajectory
     //main class
     public class TrajectoryRenderer : IRenderer
     {
+
         private const float OutlineSize = 0.02f;
         private const float MinRadius = 0.5f;
         private const float MaxRadius = 3.5f;
@@ -302,20 +298,16 @@ namespace SpearTrajectory
             ItemSlot slot = player.InventoryManager.ActiveHotbarSlot;
 
             if (slot?.Itemstack?.Item.FirstCodePart(0) is not "spear") return; //TO-DO: Use Item is not ItemSpear when not using CO, and use specific spear type when using CO.
-            // — REEMPLAZA todo el cálculo manual de startPos/dir —
+            
             var (startPos, dirVec, speed) = PatchAimingData.GetRealProjectileDirection(
     player.Entity as EntityAgent);
 
             Vec3f dir = new Vec3f((float)dirVec.X, (float)dirVec.Y, (float)dirVec.Z);
             physics.Velocity = speed;
-            // ——————————————————————————————————————————————————
 
             float accuracy = player.Entity.Attributes.GetFloat("aimingAccuracy", 0f);
-            float radius = 1;
-            if (accuracy != 0)
-            {
-                radius = MinRadius + (1f - accuracy) * (MaxRadius - MinRadius);
-            }
+            float radius = 0.7f;
+            int opacity = 255;
 
                 TrajectoryResult result = TrajectoryCalculator.Simulate(
     capi, startPos, dirVec, physics, player);  // dirVec directamente
@@ -335,7 +327,48 @@ namespace SpearTrajectory
                 ImpactCircleRenderer.Draw(
                     capi, origin, result.ImpactPoint,
                     radius, player.Entity.LocalEyePos, player,
-                    result.HitEntity, circleAngleOffset, OutlineSize);
+                    result.HitEntity, circleAngleOffset, OutlineSize, opacity);
+            }
+            // Buscar entidad más cercana al impact point, no al jugador
+            Entity nearestTarget = null;
+
+            if (result.ImpactPoint != null)
+            {
+                double nearestDist = double.MaxValue;
+                Entity[] candidates = capi.World.GetEntitiesAround(
+                    result.ImpactPoint, 2f, 2f,
+                    e => e != player.Entity && e.IsInteractable && e is EntityAgent);
+
+                if (candidates != null)
+                {
+                    foreach (Entity e in candidates)
+                    {
+                        double dist = result.ImpactPoint.SquareDistanceTo(e.Pos.XYZ);
+                        if (dist < nearestDist)
+                        {
+                            nearestDist = dist;
+                            nearestTarget = e;
+                        }
+                    }
+                }
+            }
+
+            // Si hay target, calcular y dibujar trayectoria sugerida
+            if (nearestTarget != null)
+            {
+                Vec3d solvedDir = TrajectoryAimSolver.SolveForTarget(
+                    capi, startPos, dirVec, nearestTarget, physics, player);
+
+                if (solvedDir != null)
+                {
+                    TrajectoryResult suggestedResult = TrajectoryCalculator.Simulate(
+                        capi, startPos, solvedDir, physics, player);
+
+                    SuggestedTrajectoryRenderer.Draw(
+                        capi, suggestedResult.Points, origin, viewDir,
+                        OutlineSize, -(int)dashAnimAccum);
+                    
+                }
             }
         }
 

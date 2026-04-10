@@ -26,7 +26,7 @@ namespace SpearTrajectory
 
             // Punto de mira — desde el ojo, hacia adelante
             Vec3d eyePos = entity.Pos.XYZ.Add(0, entity.LocalEyePos.Y, 0);
-            Vec3d aimPoint = eyePos.AheadCopy(100.0, entity.Pos.Pitch, entity.Pos.Yaw);
+            Vec3d aimPoint = eyePos.AheadCopy(500.0, entity.Pos.Pitch, entity.Pos.Yaw);
 
             // Posición real de spawn de la lanza (brazo derecho)
             Vec3d startPos = entity.Pos.BehindCopy(behindDistance).XYZ.Add(
