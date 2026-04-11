@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Vintagestory.API.Common;
 
-namespace SpearTrajectory.Configuration
+namespace SpearTrajectory.Config
 {
     public static class ModConfig
     {

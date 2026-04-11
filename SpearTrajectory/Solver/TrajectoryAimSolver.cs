@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
+using SpearTrajectory.Rendering;
+using SpearTrajectory.Physics;
 
-namespace SpearTrajectory
+namespace SpearTrajectory.Solver
 {
     // Calcula la dirección necesaria para alcanzar un target usando binary search sobre el pitch
     public static class TrajectoryAimSolver
@@ -123,7 +122,7 @@ namespace SpearTrajectory
             {
                 if (i <= SkipPoints) continue;
 
-                int cycle = ((i - 1) + dashOffset) % (DashLength + GapLength);
+                int cycle = (i - 1 + dashOffset) % (DashLength + GapLength);
                 if (cycle >= DashLength) continue;
 
                 Vec3d a = points[i - 1] - originVec;

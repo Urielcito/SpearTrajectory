@@ -8,12 +8,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Reference Include="CombatOverhaul">
+      <HintPath>..\..\libs\CombatOverhaul.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="configlib">
       <HintPath>..\..\libs\configlib.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="ImGui.NET">
       <HintPath>..\..\libs\ImGui.NET.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Overhaullib">
+      <HintPath>..\..\libs\Overhaullib.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="VintagestoryAPI">

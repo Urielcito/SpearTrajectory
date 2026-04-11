@@ -2,7 +2,7 @@
 using HarmonyLib;
 using Vintagestory.GameContent;
 //patches the crosshairs, removes it when aiming with spears
-namespace SpearTrajectory
+namespace SpearTrajectory.Patches
 {
     [HarmonyPatch]
     public static class PatchDrawAim

@@ -3,7 +3,7 @@ using System.Reflection;
 using Vintagestory.Client.NoObf;
 using Vintagestory.GameContent;
 //Patches the reticle, removes it when holding spears
-namespace SpearTrajectory
+namespace SpearTrajectory.Patches
 {
     [HarmonyPatch(typeof(SystemRenderPlayerAimAcc), "OnRenderFrame2DOverlay")]
     public static class PatchDrawReticle

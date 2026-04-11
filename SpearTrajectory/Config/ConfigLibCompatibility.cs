@@ -1,11 +1,10 @@
 ﻿using ConfigLib;
 using ImGuiNET;
-using SpearTrajectory.Configuration;
 using System.Numerics;
 using Vintagestory.API.Client;
 using Vintagestory.API.MathTools;
 
-namespace SpearTrajectory
+namespace SpearTrajectory.Config
 {
     public class ConfigLibCompatibility
     {
@@ -27,6 +26,14 @@ namespace SpearTrajectory
 
         private void Edit(SpearTrajectoryConfig config, string id)
         {
+            bool trajectoryLine = config.ToggleTrajectoryLine;
+            ImGui.Checkbox($"Toggle Trajectory Line##{id}", ref trajectoryLine);
+            config.ToggleTrajectoryLine = trajectoryLine;
+            ImGui.Separator();
+            bool trajectoryCircle = config.ToggleTrajectoryCircle;
+            ImGui.Checkbox($"Toggle Trajectory Circle##{id}", ref trajectoryCircle);
+            config.ToggleTrajectoryCircle = trajectoryCircle;
+            ImGui.Separator();
             // Toggle aim assist
             bool aimAssist = config.EnableAimAssist;
             ImGui.Checkbox($"Enable Aim Assist Ghost##{id}", ref aimAssist);
@@ -53,9 +60,13 @@ namespace SpearTrajectory
             ImGui.SliderFloat($"Aim Assist Search Radius##{id}", ref searchRadius, 0.5f, 10f);
             config.AimAssistSearchRadius = searchRadius;
 
+            ImGui.Separator();
+
             float circleRadius = config.ImpactCircleRadius;
             ImGui.SliderFloat($"Impact Circle Radius##{id}", ref circleRadius, 0.1f, 5f);
             config.ImpactCircleRadius = circleRadius;
+
+
         }
     }
 }

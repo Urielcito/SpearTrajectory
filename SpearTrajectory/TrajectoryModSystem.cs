@@ -1,5 +1,7 @@
 ﻿using HarmonyLib;
-using SpearTrajectory.Configuration;
+using SpearTrajectory.Bridge;
+using SpearTrajectory.Config;
+using SpearTrajectory.Rendering;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -11,7 +13,10 @@ namespace SpearTrajectory
     {
         public static SpearTrajectoryConfig Config { get; set; }
 
-        private Harmony? harmony;
+        // Bridge de CO — null hasta que se inicialice en el cliente
+        public static CombatOverhaulBridge COBridge { get; private set; }
+
+        private Harmony harmony;
 
         public override void Start(ICoreAPI api)
         {
@@ -20,7 +25,8 @@ namespace SpearTrajectory
 
         public override void StartServerSide(ICoreServerAPI api)
         {
-            Mod.Logger.Notification("Hello from template mod server side: " + Lang.Get("speartrajectory:hello"));
+            Mod.Logger.Notification("Hello from template mod server side: "
+                + Lang.Get("speartrajectory:hello"));
         }
 
         public override void StartClientSide(ICoreClientAPI api)
@@ -31,11 +37,21 @@ namespace SpearTrajectory
             if (api.ModLoader.IsModEnabled("configlib"))
                 _ = new ConfigLibCompatibility(api);
 
-            api.Event.RegisterRenderer(new TrajectoryRenderer(api), EnumRenderStage.AfterFinalComposition);
+            // Inicializar bridge con CO (seguro si CO no está instalado)
+            api.Logger.Debug("[ST] Antes de construir bridge");
+            COBridge = new CombatOverhaulBridge(api);
+            api.Logger.Debug($"[ST] Bridge construido, IsPresent={COBridge.IsPresent}");
+
+
+            api.Event.RegisterRenderer(
+                new TrajectoryRenderer(api),
+                EnumRenderStage.AfterFinalComposition);
+
             harmony = new Harmony(Mod.Info.ModID);
             harmony.PatchAll();
 
-            Mod.Logger.Notification("Hello from template mod client side: " + Lang.Get("speartrajectory:hello"));
+            Mod.Logger.Notification("Hello from template mod client side: "
+                + Lang.Get("speartrajectory:hello"));
         }
 
         public override void Dispose()
