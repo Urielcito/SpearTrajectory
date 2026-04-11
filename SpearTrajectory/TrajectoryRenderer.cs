@@ -20,10 +20,11 @@ namespace SpearTrajectory
     //phys params
     public class TrajectoryPhysics
     {
-        
+        //Spear stats
         public double GravityPerSecond = GlobalConstants.GravityPerSecond * 0.75;
         public double AirDragValue = 1 - (1 - GlobalConstants.AirDragAlways) * 0.25;
         public float Velocity = 1f;
+
         public float DeltaTime = 1f / 60f; 
         public int MaxSteps = 400;
     }
@@ -42,12 +43,16 @@ namespace SpearTrajectory
             Vec3d pos = startPos.Clone();
             pos.Z -= 0.2;
             ItemSlot slot = player.InventoryManager.ActiveHotbarSlot;
-            double velocityDecrease = 0;
-            if (slot?.Itemstack?.Item is not ItemSpear && slot?.Itemstack?.Item.FirstCodePart(0) is "spear") // combat overhaul trajectory velocity stat fix
-                velocityDecrease = 0.1;
+            double velocityOffset = 0;
+            if (slot?.Itemstack?.Item is not ItemSpear && (slot?.Itemstack?.Item.FirstCodePart(0) is "spear")) // Combat Overhaul Spear Velocity
+                velocityOffset = -0.1;
             else
-                velocityDecrease = 0;
-            Vec3d motion = direction.Clone().Mul(physics.Velocity - velocityDecrease);
+                velocityOffset = 0;
+            if (slot?.Itemstack?.Item.FirstCodePart(0) is "javelin")// Combat Overhaul Javelin Velocity
+            {
+                velocityOffset = 0.03;
+            }
+                Vec3d motion = direction.Clone().Mul(physics.Velocity + velocityOffset);
 
             result.Points.Add(pos.Clone());
 
@@ -297,7 +302,10 @@ namespace SpearTrajectory
             
             ItemSlot slot = player.InventoryManager.ActiveHotbarSlot;
 
-            if (slot?.Itemstack?.Item.FirstCodePart(0) is not "spear") return; //TO-DO: Use Item is not ItemSpear when not using CO, and use specific spear type when using CO.
+            if (slot?.Itemstack?.Item.FirstCodePart(0) is not "spear") {
+                if (slot?.Itemstack?.Item.FirstCodePart(0) is not "javelin")
+                    return;
+            } //TO-DO: Use Item is not ItemSpear when not using CO, and use specific spear type when using CO.
             
             var (startPos, dirVec, speed) = PatchAimingData.GetRealProjectileDirection(
     player.Entity as EntityAgent);
