@@ -39,20 +39,30 @@ namespace SpearTrajectory
             IPlayer player)
         {
             var result = new TrajectoryResult();
+            double velocityOffset = 0; // For fine adjustments between different projectiles
+            double posOffsetZ = 0.2;
 
             Vec3d pos = startPos.Clone();
-            pos.Z -= 0.2;
+            
             ItemSlot slot = player.InventoryManager.ActiveHotbarSlot;
-            double velocityOffset = 0;
-            if (slot?.Itemstack?.Item is not ItemSpear && (slot?.Itemstack?.Item.FirstCodePart(0) is "spear")) // Combat Overhaul Spear Velocity
-                velocityOffset = -0.1;
-            else
-                velocityOffset = 0;
-            if (slot?.Itemstack?.Item.FirstCodePart(0) is "javelin")// Combat Overhaul Javelin Velocity
+            Item activeItem = null;
+            if (slot?.Itemstack?.Item is not null)
+                activeItem = slot?.Itemstack?.Item;
+
+            if(activeItem is not null)
             {
-                velocityOffset = 0.03;
+                if (activeItem is not ItemSpear && (activeItem.FirstCodePart(0) is "spear")) // Combat Overhaul Spear Velocity
+                    velocityOffset = -0.1;
+                if (activeItem.FirstCodePart(0) is "javelin")// Combat Overhaul Javelin Velocity
+                    velocityOffset = 0.03;
+                if (activeItem is not ItemBow && activeItem.FirstCodePart(0) is "bow")// Combat Overhaul Bow Velocity
+                    velocityOffset = 0.85;
+                if (activeItem is ItemBow && activeItem.FirstCodePart(0) is "bow")// Vanilla Bow Velocity
+                    velocityOffset = 0.35;
             }
-                Vec3d motion = direction.Clone().Mul(physics.Velocity + velocityOffset);
+            pos.Z -= posOffsetZ;
+
+            Vec3d motion = direction.Clone().Mul(physics.Velocity + velocityOffset);
 
             result.Points.Add(pos.Clone());
 
@@ -301,11 +311,22 @@ namespace SpearTrajectory
             if (!capi.Input.MouseButton.Right) return;
             
             ItemSlot slot = player.InventoryManager.ActiveHotbarSlot;
-
-            if (slot?.Itemstack?.Item.FirstCodePart(0) is not "spear") {
-                if (slot?.Itemstack?.Item.FirstCodePart(0) is not "javelin")
-                    return;
-            } //TO-DO: Use Item is not ItemSpear when not using CO, and use specific spear type when using CO.
+            
+            if (slot?.Itemstack?.Item?.FirstCodePart(0) is not "spear") //ugly, to-do: reformat ts
+            {
+                if (slot?.Itemstack?.Item?.FirstCodePart(0) is not "javelin")
+                {
+                    if (slot?.Itemstack?.Item?.FirstCodePart(0) is not "bow")
+                    {
+                        if (slot?.Itemstack?.Item?.FirstCodePart(0) is not "stone")
+                            return;
+                    }
+                        
+                }
+            }
+                
+                   
+            
             
             var (startPos, dirVec, speed) = PatchAimingData.GetRealProjectileDirection(
     player.Entity as EntityAgent);

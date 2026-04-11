@@ -57,12 +57,6 @@
 </ItemGroup>
 
 <ItemGroup>
-  <Content Include="modicon.png" Condition="Exists('modicon.png')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-  </Content>
-</ItemGroup>
-
-<ItemGroup>
   <PackageReference Include="Lib.Harmony.Thin" Version="2.4.2" />
 </ItemGroup>
 

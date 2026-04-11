@@ -3,7 +3,7 @@ using Vintagestory.API.Common;
 using Vintagestory.GameContent;
 
 [HarmonyPatch]
-public static class PatchAimingAccuracy
+public static class PatchAimingAccuracy // super ugly, reformat ts
 {
     private static bool IsHoldingSpear(AccuracyModifier instance)
     {
@@ -14,31 +14,40 @@ public static class PatchAimingAccuracy
         return entity?.RightHandItemSlot?.Itemstack?.Item is ItemSpear;
     }
 
+    private static bool IsHoldingBow(AccuracyModifier instance)
+    {
+        var entityField = typeof(AccuracyModifier)
+            .GetField("entity", System.Reflection.BindingFlags.NonPublic
+                              | System.Reflection.BindingFlags.Instance);
+        var entity = entityField?.GetValue(instance) as EntityAgent;
+        return entity?.RightHandItemSlot?.Itemstack?.Item is ItemBow;
+    }
+
     [HarmonyPatch(typeof(BaseAimingAccuracy), "Update")]
     [HarmonyPostfix]
     static void PostfixBase(AccuracyModifier __instance, float dt, ref float accuracy)
     {
-        if (IsHoldingSpear(__instance)) accuracy = 1f;
+        if (IsHoldingSpear(__instance) || IsHoldingBow(__instance)) accuracy = 1f;
     }
 
     [HarmonyPatch(typeof(MovingAimingAccuracy), "Update")]
     [HarmonyPostfix]
     static void PostfixMoving(AccuracyModifier __instance, float dt, ref float accuracy)
     {
-        if (IsHoldingSpear(__instance)) accuracy = 1f;
+        if (IsHoldingSpear(__instance) || IsHoldingBow(__instance)) accuracy = 1f;
     }
 
     [HarmonyPatch(typeof(SprintAimingAccuracy), "Update")]
     [HarmonyPostfix]
     static void PostfixSprint(AccuracyModifier __instance, float dt, ref float accuracy)
     {
-        if (IsHoldingSpear(__instance)) accuracy = 1f;
+        if (IsHoldingSpear(__instance) || IsHoldingBow(__instance)) accuracy = 1f;
     }
 
     [HarmonyPatch(typeof(OnHurtAimingAccuracy), "Update")]
     [HarmonyPostfix]
     static void PostfixOnHurt(AccuracyModifier __instance, float dt, ref float accuracy)
     {
-        if (IsHoldingSpear(__instance)) accuracy = 1f;
+        if (IsHoldingSpear(__instance) || IsHoldingBow(__instance)) accuracy = 1f;
     }
 }
