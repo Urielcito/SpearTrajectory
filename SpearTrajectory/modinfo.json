@@ -2,12 +2,12 @@
     "$schema": "https://moddbcdn.vintagestory.at/schema/modinfo.latest.json",
     "type": "Code",
     "modid": "speartrajectory",
-    "name": "Spear Trajectory",
+    "name": "Projectile Trajectory",
     "authors": [
         "Kuroshiro"
     ],
-    "description": "Draws the estimated trajectory and impact point of spears when you aim with them",
-    "version": "1.0.7",
+    "description": "Overhauls projectile accuracy, draws a trajectory for most of them",
+    "version": "1.0.8",
     "dependencies": {
         "game": "1.21.0"
     }

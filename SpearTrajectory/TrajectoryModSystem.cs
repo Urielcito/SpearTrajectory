@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using SpearTrajectory.Configuration;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -8,33 +9,38 @@ namespace SpearTrajectory
 {
     public class TrajectoryModSystem : ModSystem
     {
+        public static SpearTrajectoryConfig Config { get; set; }
 
         private Harmony? harmony;
-        // Called on server and client
-        // Useful for registering block/entity classes on both sides
+
         public override void Start(ICoreAPI api)
         {
             Mod.Logger.Notification("Hello from template mod: " + api.Side);
-            
         }
 
         public override void StartServerSide(ICoreServerAPI api)
         {
-            Mod.Logger.Notification("Hello from template mod server side: " + Lang.Get("trajectory:hello"));
+            Mod.Logger.Notification("Hello from template mod server side: " + Lang.Get("speartrajectory:hello"));
         }
 
         public override void StartClientSide(ICoreClientAPI api)
         {
-            Mod.Logger.Notification("Hello from template mod client side: " + Lang.Get("trajectory:hello"));
+            Config = ModConfig.ReadConfig<SpearTrajectoryConfig>(api, SpearTrajectoryConfig.ConfigName)
+                     ?? new SpearTrajectoryConfig(api, null);
+
+            if (api.ModLoader.IsModEnabled("configlib"))
+                _ = new ConfigLibCompatibility(api);
+
             api.Event.RegisterRenderer(new TrajectoryRenderer(api), EnumRenderStage.AfterFinalComposition);
             harmony = new Harmony(Mod.Info.ModID);
             harmony.PatchAll();
+
+            Mod.Logger.Notification("Hello from template mod client side: " + Lang.Get("speartrajectory:hello"));
         }
 
         public override void Dispose()
         {
-                harmony?.UnpatchAll(Mod.Info.ModID);
+            harmony?.UnpatchAll(Mod.Info.ModID);
         }
-
     }
 }

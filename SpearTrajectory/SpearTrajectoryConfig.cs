@@ -1,0 +1,37 @@
+﻿using Newtonsoft.Json;
+using Vintagestory.API.Common;
+
+namespace SpearTrajectory.Configuration
+{
+    public class SpearTrajectoryConfig : IModConfig
+    {
+        public const string ConfigName = "SpearTrajectoryConfig.json";
+
+        [JsonProperty(Order = 1)]
+        public bool EnableAimAssist { get; set; } = true;
+
+        [JsonProperty(Order = 2)]
+        public string EntityHitColor { get; set; } = "#FF0000";
+
+        [JsonProperty(Order = 3)]
+        public string AimAssistColor { get; set; } = "#FF6600";
+
+        [JsonProperty(Order = 4)]
+        public float AimAssistSearchRadius { get; set; } = 2f;
+
+        [JsonProperty(Order = 5)]
+        public float ImpactCircleRadius { get; set; } = 0.7f;
+
+        public SpearTrajectoryConfig() { }
+
+        public SpearTrajectoryConfig(ICoreAPI api, SpearTrajectoryConfig previous)
+        {
+            if (previous == null) return;
+            EnableAimAssist = previous.EnableAimAssist;
+            EntityHitColor = previous.EntityHitColor;
+            AimAssistColor = previous.AimAssistColor;
+            AimAssistSearchRadius = previous.AimAssistSearchRadius;
+            ImpactCircleRadius = previous.ImpactCircleRadius;
+        }
+    }
+}

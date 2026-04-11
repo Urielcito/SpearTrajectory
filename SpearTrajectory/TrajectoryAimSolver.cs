@@ -105,8 +105,11 @@ namespace SpearTrajectory
             float outlineSize,
             int dashOffset = 0)
         {
-            // Blanco al 50% de alpha (~128), negro al 50% para el outline
-            int colorFill = ColorUtil.ToRgba(50, 0, 0, 255);  // naranja semi-transparente
+            double[] assistRgb = ColorUtil.Hex2Doubles(TrajectoryModSystem.Config?.AimAssistColor ?? "#FF6600");
+            int colorFill = ColorUtil.ToRgba(50,
+                (int)(assistRgb[2] * 255),
+                (int)(assistRgb[1] * 255),
+                (int)(assistRgb[0] * 255));
             int colorOutline = ColorUtil.ToRgba(50, 0, 0, 0);
 
             Vec3d vd = new Vec3d(viewDirection.X, viewDirection.Y, viewDirection.Z).Normalize();

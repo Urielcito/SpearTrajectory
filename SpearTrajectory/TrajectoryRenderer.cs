@@ -52,7 +52,7 @@ namespace SpearTrajectory
             if(activeItem is not null)
             {
                 if (activeItem is not ItemSpear && (activeItem.FirstCodePart(0) is "spear")) // Combat Overhaul Spear Velocity
-                    velocityOffset = -0.1;
+                    velocityOffset = -0.085;
                 if (activeItem.FirstCodePart(0) is "javelin")// Combat Overhaul Javelin Velocity
                     velocityOffset = 0.03;
                 if (activeItem is not ItemBow && activeItem.FirstCodePart(0) is "bow")// Combat Overhaul Bow Velocity
@@ -115,8 +115,9 @@ namespace SpearTrajectory
                 }
 
                 // entity collision
+                float vertThreshold = 1f;
                 Entity[] nearby = capi.World.GetEntitiesAround(
-                    nextPos, 0.5f, 0.5f,
+                    nextPos, 0.5f, vertThreshold,
                     e => e != player.Entity && e.IsInteractable && e is EntityAgent);
 
                 if (nearby?.Length > 0)
@@ -152,9 +153,10 @@ namespace SpearTrajectory
             bool hitEntity = false,
             int dashOffset = 0)
         {
-            
+
+            double[] entityRgb = ColorUtil.Hex2Doubles(TrajectoryModSystem.Config?.EntityHitColor ?? "#FF0000");
             int colorWhite = hitEntity
-                ? ColorUtil.ToRgba(255, 0, 0, 255)
+                ? ColorUtil.ToRgba(255, (int)(entityRgb[2] * 255), (int)(entityRgb[1] * 255), (int)(entityRgb[0] * 255))
                 : ColorUtil.ToRgba(255, 255, 255, 255);
             int colorBlack = ColorUtil.ToRgba(255, 0, 0, 0);
 
@@ -227,8 +229,9 @@ namespace SpearTrajectory
             Vec3d billRight = toImpact.Cross(worldUp).Normalize();
             Vec3d billUp = billRight.Cross(toImpact).Normalize();
 
+            double[] entityRgb = ColorUtil.Hex2Doubles(TrajectoryModSystem.Config?.EntityHitColor ?? "#FF0000");
             int colorFill = hitEntity
-                ? ColorUtil.ToRgba(opacity, 0, 0, 255)
+                ? ColorUtil.ToRgba(opacity, (int)(entityRgb[2] * 255), (int)(entityRgb[1] * 255), (int)(entityRgb[0] * 255))
                 : ColorUtil.ToRgba(opacity, 255, 255, 255);
             int colorBlack = ColorUtil.ToRgba(opacity, 0, 0, 0);
 
@@ -335,7 +338,7 @@ namespace SpearTrajectory
             physics.Velocity = speed;
 
             float accuracy = player.Entity.Attributes.GetFloat("aimingAccuracy", 0f);
-            float radius = 0.7f;
+            float radius = TrajectoryModSystem.Config?.ImpactCircleRadius ?? 0.7f;
             int opacity = 255;
 
                 TrajectoryResult result = TrajectoryCalculator.Simulate(
@@ -364,8 +367,9 @@ namespace SpearTrajectory
             if (result.ImpactPoint != null)
             {
                 double nearestDist = double.MaxValue;
+                float searchRadius = TrajectoryModSystem.Config?.AimAssistSearchRadius ?? 2f;
                 Entity[] candidates = capi.World.GetEntitiesAround(
-                    result.ImpactPoint, 2f, 2f,
+                    result.ImpactPoint, searchRadius, searchRadius,
                     e => e != player.Entity && e.IsInteractable && e is EntityAgent);
 
                 if (candidates != null)
@@ -383,7 +387,7 @@ namespace SpearTrajectory
             }
 
             // Si hay target, calcular y dibujar trayectoria sugerida
-            if (nearestTarget != null)
+            if (nearestTarget != null && TrajectoryModSystem.Config?.EnableAimAssist == true)
             {
                 Vec3d solvedDir = TrajectoryAimSolver.SolveForTarget(
                     capi, startPos, dirVec, nearestTarget, physics, player);
