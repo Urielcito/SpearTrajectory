@@ -35,7 +35,6 @@ namespace SpearTrajectory.Systems
         {
             Instance = this;
             aimingSystem = new AimingSystem(api);
-            api.RegisterEntityBehaviorClass("speartrajectory:aimingaccuracy", typeof(AimingAccuracyBehavior));
             Config = ModConfig.ReadConfig<SpearTrajectoryConfig>(api, SpearTrajectoryConfig.ConfigName)
                      ?? new SpearTrajectoryConfig(api, null);
 
