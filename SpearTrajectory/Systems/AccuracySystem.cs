@@ -25,12 +25,12 @@ namespace SpearTrajectory.Systems
     {
         private float _walkPenalty, _sprintPenalty;
 
-        private float WalkMax = 2f;    // era 1f
-        private float SprintMax = 4f;    // era 1.5f
-        private float RiseRate = 4f;    // era 6.5f — más lento para acumularse
-        private float DropRate = 1.5f;  // era 2.5f — más lento para recuperarse
-        private float DriftMod = 2f;    // era 0.8f
-        private float TwitchMod = 1.5f;  // era 0.6f
+        private float WalkMax = 2f;
+        private float SprintMax = 4f;
+        private float RiseRate = 4f;
+        private float DropRate = 1.5f;
+        private float DriftMod = 2f;
+        private float TwitchMod = 1.5f;
 
         public MyMovingAccuracy(EntityAgent entity, AimingSystem system) : base(entity, system) { }
 

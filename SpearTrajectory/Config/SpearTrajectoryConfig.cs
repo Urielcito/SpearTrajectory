@@ -3,7 +3,7 @@ using Vintagestory.API.Common;
 
 namespace SpearTrajectory.Config
 {
-    public class SpearTrajectoryConfig : IModConfig
+    public class SpearTrajectoryConfig : IModConfig //settings (GUI stuff)
     {
         public const string ConfigName = "SpearTrajectoryConfig.json";
         [JsonProperty(Order = 1)]

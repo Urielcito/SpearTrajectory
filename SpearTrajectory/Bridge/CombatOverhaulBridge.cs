@@ -7,10 +7,7 @@ using Vintagestory.API.MathTools;
 
 namespace SpearTrajectory.Bridge
 {
-    /// <summary>
-    /// Acceso opcional a Combat Overhaul via reflection.
-    /// No referencia ningún tipo de CO directamente — el mod funciona sin CO instalado.
-    /// </summary>
+    // Detects CO and helps integrate both mods
     public class CombatOverhaulBridge
     {
         public bool IsPresent { get; private set; } = false;
@@ -18,19 +15,14 @@ namespace SpearTrajectory.Bridge
 
         private ICoreClientAPI _capi;
 
-        // Instancia de CombatOverhaulSystem (ModSystem de CO)
         private object _coSystem;
 
-        // PropertyInfo para CombatOverhaulSystem.AimingSystem
         private PropertyInfo _aimingSystemProp;
 
-        // PropertyInfo para ClientAimingSystem.TargetVec (Vector3 de OpenTK)
         private PropertyInfo _targetVecProp;
 
-        // PropertyInfo para ClientAimingSystem.Aiming (bool)
         private PropertyInfo _aimingProp;
 
-        // Tipos de item de CO detectados por nombre de clase
         private Type _bowItemType;
         private Type _meleeWeaponItemType;
 
@@ -52,7 +44,7 @@ namespace SpearTrajectory.Bridge
             }
         }
 
-        private void InitReflection(ICoreClientAPI capi)
+        private void InitReflection(ICoreClientAPI capi) //Get CO and OL assemblies with reflection to get actual Item classes from the mod
         {
             Assembly overhaullibAsm = null;
             Assembly combatoverhaulAsm = null;
@@ -92,9 +84,6 @@ namespace SpearTrajectory.Bridge
             capi.Logger.Notification("[ST] Integración con Combat Overhaul activada.");
         }
 
-        /// <summary>
-        /// Retorna true si el ítem es de Combat Overhaul (bow, spear, javelin).
-        /// </summary>
         public bool IsCOItem(Item item)
         {
             if (!IsPresent || item == null) return false;
@@ -110,26 +99,17 @@ namespace SpearTrajectory.Bridge
             return false;
         }
 
-        /// <summary>
-        /// True si el ítem es un bow de CO.
-        /// </summary>
         public bool IsCOBow(Item item)
         {
             if (!IsPresent || item == null || _bowItemType == null) return false;
             return _bowItemType.IsAssignableFrom(item.GetType());
         }
 
-        /// <summary>
-        /// True si el ítem es una MeleeWeapon de CO con capacidad de lanzar
-        /// (spear/javelin — tienen ThrowAttack definido en sus atributos).
-        /// </summary>
         public bool IsCOThrowable(Item item)
         {
             if (!IsPresent || item == null || _meleeWeaponItemType == null) return false;
             if (!_meleeWeaponItemType.IsAssignableFrom(item.GetType())) return false;
 
-            // Verificar que tenga algún modo con ThrowAttack (spear/javelin)
-            // Los ítems sin ThrowAttack (hachas, espadas) no nos interesan
             try
             {
                 var modesToken = item.Attributes?["Modes"];
@@ -150,10 +130,6 @@ namespace SpearTrajectory.Bridge
             return false;
         }
 
-        /// <summary>
-        /// Retorna true si el AimingSystem de CO está actualmente apuntando.
-        /// Usar para decidir si mostrar la trayectoria en armas CO.
-        /// </summary>
         public bool IsAiming()
         {
             if (!IsPresent) return false;
@@ -168,10 +144,6 @@ namespace SpearTrajectory.Bridge
             catch { return false; }
         }
 
-        /// <summary>
-        /// Retorna la dirección 3D real del cursor de CO (ya procesada con drift/twitch/límites).
-        /// Retorna null si CO no está presente o no está apuntando.
-        /// </summary>
         public Vec3d GetTargetVec()
         {
             if (!IsPresent) return null;
@@ -181,11 +153,9 @@ namespace SpearTrajectory.Bridge
                 object aimingSystem = _aimingSystemProp.GetValue(_coSystem);
                 if (aimingSystem == null) return null;
 
-                // TargetVec es OpenTK.Mathematics.Vector3
                 object targetVec = _targetVecProp.GetValue(aimingSystem);
                 if (targetVec == null) return null;
 
-                // Extraer X, Y, Z via reflection del Vector3 de OpenTK
                 Type vec3Type = targetVec.GetType();
                 float x = (float)vec3Type.GetField("X").GetValue(targetVec);
                 float y = (float)vec3Type.GetField("Y").GetValue(targetVec);
@@ -196,11 +166,6 @@ namespace SpearTrajectory.Bridge
             catch { return null; }
         }
 
-        /// <summary>
-        /// Lee la velocidad del proyectil desde los atributos JSON del ítem CO.
-        /// Para bows lee ArrowVelocity; para throwables lee ThrowAttack.Velocity.
-        /// Retorna null si no puede leerla (fallback al cálculo existente).
-        /// </summary>
         public float? GetCOVelocity(Item item)
         {
             if (!IsPresent || item == null) return null;
@@ -209,7 +174,6 @@ namespace SpearTrajectory.Bridge
             {
                 if (IsCOBow(item))
                 {
-                    // BowStats.ArrowVelocity está en item.Attributes como objeto plano
                     float v = item.Attributes["ArrowVelocity"].AsFloat(0f);
                     if (v > 0f) return v;
                     return null;
@@ -217,7 +181,6 @@ namespace SpearTrajectory.Bridge
 
                 if (IsCOThrowable(item))
                 {
-                    // Buscar el primer modo con ThrowAttack y leer su Velocity
                     var modesToken = item.Attributes?["Modes"];
                     if (modesToken == null) return null;
 

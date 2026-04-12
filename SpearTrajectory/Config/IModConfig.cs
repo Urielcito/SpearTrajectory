@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SpearTrajectory.Config
+﻿namespace SpearTrajectory.Config
 {
-    public interface IModConfig
+    public interface IModConfig //idk I just did it bc I saw it on another repository XD
     {
     }
 }

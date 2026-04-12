@@ -1,9 +1,8 @@
-﻿using Newtonsoft.Json;
-using Vintagestory.API.Common;
+﻿using Vintagestory.API.Common;
 
 namespace SpearTrajectory.Config
 {
-    public static class ModConfig
+    public static class ModConfig //Generic mod config class to work with ConfigLib
     {
         public static T ReadConfig<T>(ICoreAPI api, string configName) where T : class, IModConfig
         {

@@ -5,9 +5,7 @@ using System.Collections.Generic;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
-using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
-using Vintagestory.GameContent;
 using SpearTrajectory.Physics;
 using SpearTrajectory.Systems;
 
@@ -197,17 +195,16 @@ namespace SpearTrajectory.Rendering
 
             if (isCOItem)
             {
-                // Para ítems de CO: mostrar solo cuando el AimingSystem reporta que está apuntando
-
+                //to only draw when aiming is possible through stances (damn you spear)
                 if (!bridge.IsAiming()) return;
             }
             else
             {
-                // Para vanilla: chequeo original por botón derecho y firstcodepart
+                // vanilla
                 if (!capi.Input.MouseButton.Right) return;
 
                 string code = activeItem?.FirstCodePart(0);
-                if (code is not "spear" and not "javelin" and not "bow" and not "stone")
+                if (code is not "spear" and not "javelin" and not "bow" and not "stone") //nifty right
                     return;
             }
 
@@ -241,7 +238,6 @@ namespace SpearTrajectory.Rendering
                     result.HitEntity, circleAngleOffset, OutlineSize, opacity);
             }
 
-            // Buscar entidad más cercana al impact point
             Entity nearestTarget = null;
 
             if (result.ImpactPoint != null)
@@ -266,7 +262,7 @@ namespace SpearTrajectory.Rendering
                 }
             }
 
-            // Si hay target, calcular y dibujar trayectoria sugerida
+            // ghost assist
             if (nearestTarget != null && TrajectoryModSystem.Config?.EnableAimAssist == true)
             {
                 Vec3d solvedDir = TrajectoryAimSolver.SolveForTarget(

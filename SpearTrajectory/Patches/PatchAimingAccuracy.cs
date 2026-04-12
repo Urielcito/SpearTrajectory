@@ -3,8 +3,9 @@ using Vintagestory.API.Common;
 using Vintagestory.GameContent;
 
 [HarmonyPatch]
-public static class PatchAimingAccuracy // super ugly, reformat ts
+public static class PatchAimingAccuracy // super ugly, reformat ts, basically overrides vanilla accuracy and force sets it to 100% in every scenario
 {
+    //I'm sure I can do it better, but not important rn so meh
     private static bool IsHoldingSpear(AccuracyModifier instance)
     {
         var entityField = typeof(AccuracyModifier)

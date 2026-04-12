@@ -9,6 +9,7 @@ namespace SpearTrajectory.Config
 {
     public class ConfigLibCompatibility
     {
+
         public ConfigLibCompatibility(ICoreClientAPI api)
         {
             api.ModLoader.GetModSystem<ConfigLibModSystem>()
@@ -42,13 +43,13 @@ namespace SpearTrajectory.Config
 
             ImGui.Separator();
 
-            // Color línea/círculo al golpear entidad
+            // Entity collision color
             double[] hitRgb = ColorUtil.Hex2Doubles(config.EntityHitColor ?? "#FF0000");
             Vector3 hitColor = new((float)hitRgb[0], (float)hitRgb[1], (float)hitRgb[2]);
             ImGui.ColorEdit3($"Entity Hit Color##{id}", ref hitColor, ImGuiColorEditFlags.DisplayHex);
             config.EntityHitColor = ColorUtil.Doubles2Hex(new double[] { hitColor.X, hitColor.Y, hitColor.Z });
 
-            // Color ghost assist
+            // Ghost assist color
             double[] assistRgb = ColorUtil.Hex2Doubles(config.AimAssistColor ?? "#FF6600");
             Vector3 assistColor = new((float)assistRgb[0], (float)assistRgb[1], (float)assistRgb[2]);
             ImGui.ColorEdit3($"Aim Assist Ghost Color##{id}", ref assistColor, ImGuiColorEditFlags.DisplayHex);
@@ -56,13 +57,14 @@ namespace SpearTrajectory.Config
 
             ImGui.Separator();
 
-            // Radio de búsqueda del ghost assist
+            // Ghost assist search radius
             float searchRadius = config.AimAssistSearchRadius;
             ImGui.SliderFloat($"Aim Assist Search Radius##{id}", ref searchRadius, 0.5f, 10f);
             config.AimAssistSearchRadius = searchRadius;
 
             ImGui.Separator();
 
+            // Circle radius
             float circleRadius = config.ImpactCircleRadius;
             ImGui.SliderFloat($"Impact Circle Radius##{id}", ref circleRadius, 0.1f, 5f);
             config.ImpactCircleRadius = circleRadius;

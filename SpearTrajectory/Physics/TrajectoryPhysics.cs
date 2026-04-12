@@ -4,6 +4,7 @@ using Vintagestory.GameContent;
 
 public class TrajectoryPhysics
 {
+    //physics for each type of weapon known to man (I hope I don't have to add more else here)
     public double GravityPerSecond = GlobalConstants.GravityPerSecond * 0.75;
     public double AirDragValue = 1 - (1 - GlobalConstants.AirDragAlways) * 0.25;
     public float Velocity = 1f;

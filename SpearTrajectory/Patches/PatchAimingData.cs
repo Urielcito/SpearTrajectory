@@ -2,7 +2,6 @@
 using SpearTrajectory.Systems;
 using System;
 using Vintagestory.API.Common;
-using Vintagestory.API.Common.Entities;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 
@@ -60,7 +59,7 @@ namespace SpearTrajectory.Patches
             }
             else
             {
-                // Fallback vanilla
+                // Fallbacks to vanilla ( i don't think ts is needed tho.. "if it works don't touch it" )
                 float accuracy = entity.Attributes.GetFloat("aimingAccuracy", 0f);
                 float dispersion = Math.Max(0.001f, 1f - accuracy);
                 pitchOffset = entity.WatchedAttributes.GetDouble("aimingRandPitch", 1) * dispersion * 0.75;

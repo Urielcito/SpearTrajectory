@@ -22,7 +22,7 @@ namespace SpearTrajectory.Physics
             Vec3d pos = startPos.Clone();
 
 
-            pos.Z -= posOffsetZ;
+            pos.Z -= posOffsetZ; //todo: compensate player rotation in world, as it currently shifts the actual landing spot by a bit when the player is near to completing a 360 turn
 
             Vec3d motion = direction.Clone().Mul(physics.Velocity);
 

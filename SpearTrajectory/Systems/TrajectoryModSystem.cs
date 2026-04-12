@@ -1,9 +1,7 @@
-﻿using CombatOverhaul.RangedSystems.Aiming;
-using HarmonyLib;
+﻿using HarmonyLib;
 using SpearTrajectory.Bridge;
 using SpearTrajectory.Config;
 using SpearTrajectory.Rendering;
-using System.ComponentModel;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -15,7 +13,6 @@ namespace SpearTrajectory.Systems
     {
         public static SpearTrajectoryConfig Config { get; set; }
 
-        // Bridge de CO — null hasta que se inicialice en el cliente
         public static CombatOverhaulBridge COBridge { get; private set; }
 
         public AimingSystem? aimingSystem { get; private set; }
@@ -45,7 +42,6 @@ namespace SpearTrajectory.Systems
             if (api.ModLoader.IsModEnabled("configlib"))
                 _ = new ConfigLibCompatibility(api);
 
-            // Inicializar bridge con CO (seguro si CO no está instalado)
             api.Logger.Debug("[ST] Antes de construir bridge");
             COBridge = new CombatOverhaulBridge(api);
             api.Logger.Debug($"[ST] Bridge construido, IsPresent={COBridge.IsPresent}");
