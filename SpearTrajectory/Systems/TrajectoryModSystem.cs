@@ -1,13 +1,15 @@
-﻿using HarmonyLib;
+﻿using CombatOverhaul.RangedSystems.Aiming;
+using HarmonyLib;
 using SpearTrajectory.Bridge;
 using SpearTrajectory.Config;
 using SpearTrajectory.Rendering;
+using System.ComponentModel;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.Server;
 
-namespace SpearTrajectory
+namespace SpearTrajectory.Systems
 {
     public class TrajectoryModSystem : ModSystem
     {
@@ -15,6 +17,9 @@ namespace SpearTrajectory
 
         // Bridge de CO — null hasta que se inicialice en el cliente
         public static CombatOverhaulBridge COBridge { get; private set; }
+
+        public AimingSystem? aimingSystem { get; private set; }
+        public static TrajectoryModSystem? Instance { get; private set; }
 
         private Harmony harmony;
 
@@ -31,6 +36,9 @@ namespace SpearTrajectory
 
         public override void StartClientSide(ICoreClientAPI api)
         {
+            Instance = this;
+            aimingSystem = new AimingSystem(api);
+            api.RegisterEntityBehaviorClass("speartrajectory:aimingaccuracy", typeof(AimingAccuracyBehavior));
             Config = ModConfig.ReadConfig<SpearTrajectoryConfig>(api, SpearTrajectoryConfig.ConfigName)
                      ?? new SpearTrajectoryConfig(api, null);
 
@@ -57,6 +65,7 @@ namespace SpearTrajectory
         public override void Dispose()
         {
             harmony?.UnpatchAll(Mod.Info.ModID);
+            Instance = null;
         }
     }
 }

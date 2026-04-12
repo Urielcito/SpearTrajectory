@@ -6,6 +6,7 @@ using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
 using SpearTrajectory.Rendering;
 using SpearTrajectory.Physics;
+using SpearTrajectory.Systems;
 
 namespace SpearTrajectory.Solver
 {

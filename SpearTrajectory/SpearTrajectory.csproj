@@ -76,8 +76,4 @@
   <PackageReference Include="Lib.Harmony.Thin" Version="2.4.2" />
 </ItemGroup>
 
-<ItemGroup>
-  <Folder Include="assets\" />
-</ItemGroup>
-
 </Project>

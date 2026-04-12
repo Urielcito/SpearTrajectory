@@ -8,7 +8,7 @@ public class TrajectoryPhysics
     public double AirDragValue = 1 - (1 - GlobalConstants.AirDragAlways) * 0.25;
     public float Velocity = 1f;
     public float DeltaTime = 1f / 60f;
-    public int MaxSteps = 400;
+    public int MaxSteps = 1000;
 
     public static TrajectoryPhysics For(Item item, bool isCOItem)
     {
@@ -38,7 +38,7 @@ public class TrajectoryPhysics
             },
             _ when isCOItem && item.FirstCodePart(0) is "bow" => new TrajectoryPhysics
             {
-                Velocity = 1.21f,
+                Velocity = 2.6f,
             },
             _ => new TrajectoryPhysics()
         };

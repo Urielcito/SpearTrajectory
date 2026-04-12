@@ -9,6 +9,7 @@ using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 using SpearTrajectory.Physics;
+using SpearTrajectory.Systems;
 
 namespace SpearTrajectory.Rendering
 {
@@ -215,7 +216,6 @@ namespace SpearTrajectory.Rendering
 
             var physics = TrajectoryPhysics.For(activeItem, isCOItem);
 
-            float accuracy = player.Entity.Attributes.GetFloat("aimingAccuracy", 0f);
             float radius = TrajectoryModSystem.Config?.ImpactCircleRadius ?? 0.7f;
             int opacity = 255;
 

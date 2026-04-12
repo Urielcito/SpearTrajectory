@@ -14,6 +14,7 @@ namespace SpearTrajectory.Bridge
     public class CombatOverhaulBridge
     {
         public bool IsPresent { get; private set; } = false;
+        public bool IsCOPresent { get; private set; } = false;
 
         private ICoreClientAPI _capi;
 
@@ -87,6 +88,7 @@ namespace SpearTrajectory.Bridge
             _meleeWeaponItemType = itemAsm.GetType("CombatOverhaul.Implementations.MeleeWeapon");
 
             IsPresent = true;
+            IsCOPresent = combatoverhaulAsm != null;
             capi.Logger.Notification("[ST] Integración con Combat Overhaul activada.");
         }
 
