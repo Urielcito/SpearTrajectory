@@ -19,6 +19,7 @@ public class TrajectoryPhysics
         {
             ItemBow => new TrajectoryPhysics
             {
+                Velocity = 0.95f,
                 GravityPerSecond = GlobalConstants.GravityPerSecond * 0.75,
                 AirDragValue = 1 - (1 - GlobalConstants.AirDragAlways) * 0.25,
             },
