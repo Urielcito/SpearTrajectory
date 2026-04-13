@@ -17,30 +17,42 @@ public class TrajectoryPhysics
 
         return item switch
         {
-            ItemBow => new TrajectoryPhysics
+            ItemBow => new TrajectoryPhysics // Vanilla Bow
             {
                 Velocity = 0.95f,
                 GravityPerSecond = GlobalConstants.GravityPerSecond * 0.75,
                 AirDragValue = 1 - (1 - GlobalConstants.AirDragAlways) * 0.25,
             },
-            ItemSpear => new TrajectoryPhysics
+            ItemSpear => new TrajectoryPhysics // Vanilla Spear
             {
                 Velocity = 0.62f,
                 GravityPerSecond = GlobalConstants.GravityPerSecond * 0.75,
             },
-            _ when isCOItem && item.FirstCodePart(0) is "spear" => new TrajectoryPhysics
+            _ when item is not ItemSpear && item.FirstCodePart(0) is "spear" => new TrajectoryPhysics // CO Spear
             {
                 Velocity = 0.56f,
                 GravityPerSecond = GlobalConstants.GravityPerSecond * 0.75,
             },
-            _ when isCOItem && item.FirstCodePart(0) is "javelin" => new TrajectoryPhysics
+            _ when isCOItem && item.FirstCodePart(0) is "javelin" => new TrajectoryPhysics // CO Javelin
             {
-                Velocity = 0.7f,
+                Velocity = 0.685f,
                 GravityPerSecond = GlobalConstants.GravityPerSecond * 0.75,
             },
-            _ when isCOItem && item.FirstCodePart(0) is "bow" => new TrajectoryPhysics
+            _ when item is not ItemBow && item.Code.SecondCodePart().Contains("crude") => new TrajectoryPhysics // CO Crude Bow
+            {
+                Velocity = 1.196f,
+            },
+            _ when item is not ItemBow && item.Code.SecondCodePart().Contains("simple") => new TrajectoryPhysics // CO Simple Bow
+            {
+                Velocity = 1.49f,
+            },
+            _ when item is not ItemBow && item.Code.SecondCodePart().Contains("long") => new TrajectoryPhysics // CO Long Bow
             {
                 Velocity = 2.6f,
+            },
+            _ when item is not ItemBow && item.Code.SecondCodePart().Contains("recurve") => new TrajectoryPhysics // CO Recurve Bow
+            {
+                Velocity = 2f,
             },
             _ => new TrajectoryPhysics()
         };
