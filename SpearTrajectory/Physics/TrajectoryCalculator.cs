@@ -4,6 +4,7 @@ using Vintagestory.API.Client;
 using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
+using SpearTrajectory.Systems;
 
 namespace SpearTrajectory.Physics
 {
@@ -40,7 +41,7 @@ namespace SpearTrajectory.Physics
                     motion.Scale(Math.Pow(physics.AirDragValue, subDt * 33));
 
                     double gravityStrength = (physics.GravityPerSecond / 60f * subDtFactor);
-                    if (physics.UseCOPhysics is false)
+                    if (physics.UseCOPhysics is false && TrajectoryModSystem.COBridge.IsPresent is not true)
                         gravityStrength += Math.Max(0, -0.015f * motion.Y * subDtFactor);
                     motion.Y -= gravityStrength;
 
