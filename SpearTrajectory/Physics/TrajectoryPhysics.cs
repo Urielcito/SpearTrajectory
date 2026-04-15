@@ -10,6 +10,7 @@ public class TrajectoryPhysics
     public float Velocity = 1f;
     public float DeltaTime = 1f / 60f;
     public int MaxSteps = 1000;
+    public bool UseCOPhysics = true;
 
     public static TrajectoryPhysics For(Item item, bool isCOItem)
     {
@@ -20,14 +21,17 @@ public class TrajectoryPhysics
             ItemBow => new TrajectoryPhysics // Vanilla Bow
             {
                 Velocity = 1f,
+                UseCOPhysics = false
             },
             ItemSpear => new TrajectoryPhysics // Vanilla Spear
             {
                 Velocity = 0.65f,
+                UseCOPhysics = false
             },
             _ when item is not ItemSpear && item.FirstCodePart(0) is "spear" => new TrajectoryPhysics // CO Spear
             {
                 Velocity = 0.56f
+
             },
             _ when isCOItem && item.FirstCodePart(0) is "javelin" => new TrajectoryPhysics // CO Javelin
             {

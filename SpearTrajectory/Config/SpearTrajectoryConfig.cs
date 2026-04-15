@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 using Vintagestory.API.Common;
 
 namespace SpearTrajectory.Config
@@ -23,7 +24,14 @@ namespace SpearTrajectory.Config
         public float AimAssistSearchRadius { get; set; } = 2f;
 
         [JsonProperty(Order = 7)]
-        public float ImpactCircleRadius { get; set; } = 0.7f;
+        public float ImpactCircleRadius { get; set; } = 0.3f;
+
+
+        [JsonProperty(Order = 8)]
+        public float OutlineSize { get; set; } = 0.02f;
+
+        [JsonProperty(Order = 9)]
+        public bool ToggleImpactParticle { get; set; } = true;
 
         public SpearTrajectoryConfig() { }
 
@@ -35,6 +43,8 @@ namespace SpearTrajectory.Config
             AimAssistColor = previous.AimAssistColor;
             AimAssistSearchRadius = previous.AimAssistSearchRadius;
             ImpactCircleRadius = previous.ImpactCircleRadius;
+            OutlineSize = previous.OutlineSize;
+            ToggleImpactParticle = previous.ToggleImpactParticle;
         }
     }
 }

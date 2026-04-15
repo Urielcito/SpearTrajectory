@@ -39,7 +39,9 @@ namespace SpearTrajectory.Physics
                 {
                     motion.Scale(Math.Pow(physics.AirDragValue, subDt * 33));
 
-                    double gravityStrength = (physics.GravityPerSecond / 60f * subDtFactor) + Math.Max(0, -0.015f * motion.Y * subDtFactor); ;
+                    double gravityStrength = (physics.GravityPerSecond / 60f * subDtFactor);
+                    if (physics.UseCOPhysics is false)
+                        gravityStrength += Math.Max(0, -0.015f * motion.Y * subDtFactor);
                     motion.Y -= gravityStrength;
 
                     Vec3d nextPos = new Vec3d(

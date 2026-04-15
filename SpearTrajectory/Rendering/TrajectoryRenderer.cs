@@ -26,13 +26,13 @@ namespace SpearTrajectory.Rendering
         private const int SkipPoints = 3;
 
         public static void Draw(
-            ICoreClientAPI capi,
-            List<Vec3d> points,
-            BlockPos origin,
-            Vec3f viewDirection,
-            float outlineSize,
-            bool hitEntity = false,
-            int dashOffset = 0)
+    ICoreClientAPI capi,
+    List<Vec3d> points,
+    BlockPos origin,
+    Vec3f viewDirection,
+    float outlineSize,
+    bool hitEntity = false,
+    int dashOffset = 0)
         {
             double[] entityRgb = ColorUtil.Hex2Doubles(TrajectoryModSystem.Config?.EntityHitColor ?? "#FF0000");
             int colorWhite = hitEntity
@@ -40,13 +40,11 @@ namespace SpearTrajectory.Rendering
                 : ColorUtil.ToRgba(255, 255, 255, 255);
             int colorBlack = ColorUtil.ToRgba(255, 0, 0, 0);
 
-            Vec3d vd = new Vec3d(viewDirection.X, viewDirection.Y, viewDirection.Z).Normalize();
-            Vec3d tempUp = Math.Abs(vd.Y) < 0.99 ? new Vec3d(0, 1, 0) : new Vec3d(1, 0, 0);
-            Vec3d oRight = vd.Cross(tempUp).Normalize().Mul(outlineSize);
-            Vec3d oUp = vd.Cross(oRight).Normalize().Mul(outlineSize);
+            Vec3d vd = new Vec3d(viewDirection.X, viewDirection.Y, viewDirection.Z); // ya no se usa para offset
 
             Vec3d originVec = origin.ToVec3d();
-            for (int i = 1; i < points.Count; i++)
+
+            for (int i = 0; i < points.Count; i++)
             {
                 if (i <= SkipPoints) continue;
 
@@ -56,17 +54,23 @@ namespace SpearTrajectory.Rendering
                 Vec3d a = points[i - 1] - originVec;
                 Vec3d b = points[i] - originVec;
 
-                DrawOutlinedLine(capi, origin, a, b, oRight, oUp, colorWhite, colorBlack);
+                DrawOutlinedLine(capi, origin, a, b, vd, colorWhite, colorBlack, outlineSize);
             }
         }
 
         private static void DrawOutlinedLine(
-            ICoreClientAPI capi,
-            BlockPos origin,
-            Vec3d a, Vec3d b,
-            Vec3d oRight, Vec3d oUp,
-            int colorWhite, int colorBlack)
+    ICoreClientAPI capi,
+    BlockPos origin,
+    Vec3d a, Vec3d b,
+    Vec3d viewDir,        // reemplaza oRight/oUp
+    int colorWhite, int colorBlack,
+    float outlineSize)
         {
+            Vec3d segDir = (b - a).Normalize();
+            Vec3d tempUp = Math.Abs(segDir.Y) < 0.99 ? new Vec3d(0, 1, 0) : new Vec3d(1, 0, 0);
+            Vec3d oRight = segDir.Cross(tempUp).Normalize().Mul(outlineSize);
+            Vec3d oUp = segDir.Cross(oRight).Normalize().Mul(outlineSize);
+
             Vec3d[] offsets = { oRight, oRight.Clone().Mul(-1), oUp, oUp.Clone().Mul(-1) };
             foreach (Vec3d off in offsets)
             {
@@ -168,9 +172,6 @@ namespace SpearTrajectory.Rendering
     //main class
     public class TrajectoryRenderer : IRenderer
     {
-        private const float OutlineSize = 0.02f;
-        private const float MinRadius = 0.5f;
-        private const float MaxRadius = 3.5f;
         private const float CircleSpeed = 1.5f;
         private const float DashSpeed = 8f;
 
@@ -214,7 +215,7 @@ namespace SpearTrajectory.Rendering
     player.Entity as EntityAgent);
 
             var physics = TrajectoryPhysics.For(activeItem, isCOItem);
-
+            float outlineSize = TrajectoryModSystem.Config?.OutlineSize ?? 0.02f;
             float radius = TrajectoryModSystem.Config?.ImpactCircleRadius ?? 0.7f;
             int opacity = 255;
 
@@ -222,12 +223,14 @@ namespace SpearTrajectory.Rendering
                 capi, startPos, dirVec, physics, player);
 
             Vec3f viewDir = player.Entity.SidedPos.GetViewVector();
+
             BlockPos origin = startPos.AsBlockPos;
+            
             if (TrajectoryModSystem.Config?.ToggleTrajectoryLine == true)
             {
                 TrajectoryLineRenderer.Draw(
                 capi, result.Points, origin, viewDir,
-                OutlineSize, result.HitEntity, -(int)dashAnimAccum);
+                outlineSize, result.HitEntity, -(int)dashAnimAccum);
             }
 
             AdvanceAnimations(deltaTime, result.HitEntity);
@@ -237,9 +240,9 @@ namespace SpearTrajectory.Rendering
                 ImpactCircleRenderer.Draw(
                     capi, origin, result.ImpactPoint,
                     radius, player.Entity.LocalEyePos, player,
-                    result.HitEntity, circleAngleOffset, OutlineSize, opacity);
+                    result.HitEntity, circleAngleOffset, outlineSize, opacity);
             }
-            if (result.ImpactPoint != null)
+            if (result.ImpactPoint != null && TrajectoryModSystem.Config?.ToggleImpactParticle == true)
             {
                 SpawnImpactParticle(result);
             }
@@ -281,7 +284,7 @@ namespace SpearTrajectory.Rendering
 
                     SuggestedTrajectoryRenderer.Draw(
                         capi, suggestedResult.Points, origin, viewDir,
-                        OutlineSize, -(int)dashAnimAccum);
+                        outlineSize, -(int)dashAnimAccum);
                 }
             }
         }
@@ -289,48 +292,28 @@ namespace SpearTrajectory.Rendering
         private void SpawnImpactParticle(TrajectoryResult result)
         {
             AdvancedParticleProperties props = new AdvancedParticleProperties();
-
             props.basePos = result.ImpactPoint;
-
-            // Cantidad
             props.Quantity = NatFloat.createUniform(0, 15);
-
-            // Vida corta (chispa)
             props.LifeLength = NatFloat.createUniform(0.2f, 0.05f);
-
-            // Tamaño chico
             props.Size = NatFloat.createUniform(0.06f, 0.03f);
-
-            // Gravedad leve
             props.GravityEffect = NatFloat.createUniform(0.3f, 0.2f);
-
-            // Explosión radial
             props.Velocity = new NatFloat[]
             {
-    NatFloat.createUniform(-0.4f, 0.8f),
-    NatFloat.createUniform(0.2f, 0.5f),
-    NatFloat.createUniform(-0.4f, 0.8f)
+                NatFloat.createUniform(-0.4f, 0.8f),
+                NatFloat.createUniform(0.2f, 0.5f),
+                NatFloat.createUniform(-0.4f, 0.8f)
             };
-
-            // 🎨 Amarillo/naranja chispa
             props.HsvaColor = new NatFloat[]
             {
-    NatFloat.createUniform(30, 15),   // entre naranja y amarillo
-    NatFloat.createUniform(220, 35),
-    NatFloat.createUniform(255, 0),
-    NatFloat.createUniform(220, 35)
+                NatFloat.createUniform(30, 15),   
+                NatFloat.createUniform(220, 35),
+                NatFloat.createUniform(255, 0),
+                NatFloat.createUniform(220, 35)
             };
-
-            // ✨ Glow visual
             props.VertexFlags = 128;
-
-            // Modelo
             props.ParticleModel = EnumParticleModel.Quad;
-
-            // Sin colisión (más liviano)
             props.TerrainCollision = false;
 
-            // Spawn
             capi.World.SpawnParticles(props);
         }
         private void AdvanceAnimations(float deltaTime, bool hitEntity)

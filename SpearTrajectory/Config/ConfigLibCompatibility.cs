@@ -69,6 +69,18 @@ namespace SpearTrajectory.Config
             ImGui.SliderFloat($"Impact Circle Radius##{id}", ref circleRadius, 0.1f, 5f);
             config.ImpactCircleRadius = circleRadius;
 
+            ImGui.Separator();
+
+            float outlineSize = config.OutlineSize;
+            ImGui.SliderFloat($"Outline Size##{id}", ref outlineSize, 0.005f, 0.1f);
+            config.OutlineSize = outlineSize;
+
+            ImGui.Separator();
+
+            bool toggleParticle = config.ToggleImpactParticle;
+            ImGui.Checkbox($"Toggle Impact Particle##{id}", ref toggleParticle);
+            config.ToggleImpactParticle = toggleParticle;
+
 
         }
     }
