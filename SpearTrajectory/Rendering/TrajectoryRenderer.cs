@@ -118,6 +118,7 @@ namespace SpearTrajectory.Rendering
 
             DrawDottedCircle(capi, origin, impactPoint, radius,
                 billUp, billRight, colorFill, colorBlack, outlineSize, usedAngleOffset);
+
         }
 
         private static void DrawDottedCircle(
@@ -208,6 +209,7 @@ namespace SpearTrajectory.Rendering
                     return;
             }
 
+            
             var (startPos, dirVec, speed) = PatchAimingData.GetRealProjectileDirection(
     player.Entity as EntityAgent);
 
@@ -236,6 +238,10 @@ namespace SpearTrajectory.Rendering
                     capi, origin, result.ImpactPoint,
                     radius, player.Entity.LocalEyePos, player,
                     result.HitEntity, circleAngleOffset, OutlineSize, opacity);
+            }
+            if (result.ImpactPoint != null)
+            {
+                SpawnImpactParticle(result);
             }
 
             Entity nearestTarget = null;
@@ -280,6 +286,53 @@ namespace SpearTrajectory.Rendering
             }
         }
 
+        private void SpawnImpactParticle(TrajectoryResult result)
+        {
+            AdvancedParticleProperties props = new AdvancedParticleProperties();
+
+            props.basePos = result.ImpactPoint;
+
+            // Cantidad
+            props.Quantity = NatFloat.createUniform(0, 15);
+
+            // Vida corta (chispa)
+            props.LifeLength = NatFloat.createUniform(0.2f, 0.05f);
+
+            // Tamaño chico
+            props.Size = NatFloat.createUniform(0.06f, 0.03f);
+
+            // Gravedad leve
+            props.GravityEffect = NatFloat.createUniform(0.3f, 0.2f);
+
+            // Explosión radial
+            props.Velocity = new NatFloat[]
+            {
+    NatFloat.createUniform(-0.4f, 0.8f),
+    NatFloat.createUniform(0.2f, 0.5f),
+    NatFloat.createUniform(-0.4f, 0.8f)
+            };
+
+            // 🎨 Amarillo/naranja chispa
+            props.HsvaColor = new NatFloat[]
+            {
+    NatFloat.createUniform(30, 15),   // entre naranja y amarillo
+    NatFloat.createUniform(220, 35),
+    NatFloat.createUniform(255, 0),
+    NatFloat.createUniform(220, 35)
+            };
+
+            // ✨ Glow visual
+            props.VertexFlags = 128;
+
+            // Modelo
+            props.ParticleModel = EnumParticleModel.Quad;
+
+            // Sin colisión (más liviano)
+            props.TerrainCollision = false;
+
+            // Spawn
+            capi.World.SpawnParticles(props);
+        }
         private void AdvanceAnimations(float deltaTime, bool hitEntity)
         {
             circleAngleOffset += deltaTime * CircleSpeed;

@@ -18,25 +18,42 @@ namespace SpearTrajectory.Solver
 
         // Retorna la dirección ajustada, o null si no encontró solución
         public static Vec3d SolveForTarget(
-            ICoreClientAPI capi,
-            Vec3d startPos,
-            Vec3d currentDir,    // dirección actual del jugador, usada para el yaw
-            Entity target,
-            TrajectoryPhysics physics,
-            IPlayer player)
+    ICoreClientAPI capi,
+    Vec3d startPos,
+    Vec3d currentDir,
+    Entity target,
+    TrajectoryPhysics physics,
+    IPlayer player)
         {
-            Vec3d targetPos = target.Pos.XYZ.AddCopy(0, target.SelectionBox.Y2 * 0.5, 0); // centro del mob
+            // Centro de la hitbox del target como punto de referencia para el yaw
+            Cuboidf cb = target.CollisionBox;
+            Vec3d ePos = target.Pos.XYZ;
+            Vec3d targetCenter = new Vec3d(
+                ePos.X + (cb.X1 + cb.X2) * 0.5,
+                ePos.Y + (cb.Y1 + cb.Y2) * 0.5,
+                ePos.Z + (cb.Z1 + cb.Z2) * 0.5
+            );
 
-            // Yaw fijo apuntando horizontalmente al target
-            double dx = targetPos.X - startPos.X;
-            double dz = targetPos.Z - startPos.Z;
+            double dx = targetCenter.X - startPos.X;
+            double dz = targetCenter.Z - startPos.Z;
             double yaw = Math.Atan2(dx, dz);
+            double targetDist = Math.Sqrt(dx * dx + dz * dz);
 
-            // Binary search sobre el pitch: entre -80° y +80°
             double pitchLow = -80.0 * Math.PI / 180.0;
             double pitchHigh = 80.0 * Math.PI / 180.0;
             Vec3d bestDir = null;
             double bestError = double.MaxValue;
+
+            // Hitbox mundial del target, expandida ligeramente para que se sienta justo
+            const double HitboxPadding = 0.05;
+            Cuboidd worldBox = new Cuboidd(
+                ePos.X + cb.X1 - HitboxPadding,
+                ePos.Y + cb.Y1 - HitboxPadding,
+                ePos.Z + cb.Z1 - HitboxPadding,
+                ePos.X + cb.X2 + HitboxPadding,
+                ePos.Y + cb.Y2 + HitboxPadding,
+                ePos.Z + cb.Z2 + HitboxPadding
+            );
 
             for (int i = 0; i < SearchIterations; i++)
             {
@@ -48,17 +65,21 @@ namespace SpearTrajectory.Solver
 
                 if (testResult.ImpactPoint == null) break;
 
-                // Distancia horizontal entre impacto y target
-                double errorX = testResult.ImpactPoint.X - targetPos.X;
-                double errorZ = testResult.ImpactPoint.Z - targetPos.Z;
-                double horizDist = Math.Sqrt(errorX * errorX + errorZ * errorZ);
+                // Hit directo contra la hitbox: solución encontrada
+                if (testResult.HitEntity)
+                {
+                    Cuboidd projBox = new Cuboidd(
+                        testResult.ImpactPoint.X - 0.05, testResult.ImpactPoint.Y - 0.05, testResult.ImpactPoint.Z - 0.05,
+                        testResult.ImpactPoint.X + 0.05, testResult.ImpactPoint.Y + 0.05, testResult.ImpactPoint.Z + 0.05
+                    );
+                    if (worldBox.IntersectsOrTouches(projBox))
+                        return testDir; // solución exacta, salimos ya
+                }
 
-                // Distancia total del target al origen del lanzamiento (horizontal)
-                double targetDist = Math.Sqrt(dx * dx + dz * dz);
-                // El impacto cayó cerca o lejos del target?
-                double impactDist = Math.Sqrt(
-                    (testResult.ImpactPoint.X - startPos.X) * (testResult.ImpactPoint.X - startPos.X) +
-                    (testResult.ImpactPoint.Z - startPos.Z) * (testResult.ImpactPoint.Z - startPos.Z));
+                // Error: distancia horizontal entre impacto y centro del target
+                double errorX = testResult.ImpactPoint.X - targetCenter.X;
+                double errorZ = testResult.ImpactPoint.Z - targetCenter.Z;
+                double horizDist = Math.Sqrt(errorX * errorX + errorZ * errorZ);
 
                 if (horizDist < bestError)
                 {
@@ -68,7 +89,11 @@ namespace SpearTrajectory.Solver
 
                 if (horizDist < AcceptableError) break;
 
-                // Si el impacto quedó corto, subir el pitch (lanzar más alto)
+                // Ajustar pitch: si cayó corto, lanzar más alto
+                double impactDist = Math.Sqrt(
+                    (testResult.ImpactPoint.X - startPos.X) * (testResult.ImpactPoint.X - startPos.X) +
+                    (testResult.ImpactPoint.Z - startPos.Z) * (testResult.ImpactPoint.Z - startPos.Z));
+
                 if (impactDist < targetDist)
                     pitchHigh = pitchMid;
                 else

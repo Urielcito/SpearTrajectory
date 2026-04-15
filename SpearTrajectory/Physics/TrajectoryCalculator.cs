@@ -10,85 +10,115 @@ namespace SpearTrajectory.Physics
     public static class TrajectoryCalculator
     {
         public static TrajectoryResult Simulate(
-            ICoreClientAPI capi,
-            Vec3d startPos,
-            Vec3d direction,
-            TrajectoryPhysics physics,
-            IPlayer player)
+    ICoreClientAPI capi,
+    Vec3d startPos,
+    Vec3d direction,
+    TrajectoryPhysics physics,
+    IPlayer player)
         {
             var result = new TrajectoryResult();
-            double posOffsetZ = 0.2;
 
             Vec3d pos = startPos.Clone();
-
-
-            pos.Z -= posOffsetZ; //todo: compensate player rotation in world, as it currently shifts the actual landing spot by a bit when the player is near to completing a 360 turn
-
             Vec3d motion = direction.Clone().Mul(physics.Velocity);
 
             result.Points.Add(pos.Clone());
 
             float dt = physics.DeltaTime;
-            float dtFactor = 60f * dt;
 
             for (int i = 0; i < physics.MaxSteps; i++)
             {
-                double drag = Math.Pow(physics.AirDragValue, dt * 33);
-                motion.X *= drag;
-                motion.Y *= drag;
-                motion.Z *= drag;
+                int loops = motion.Length() > 0.1 ? 10 : 1;
+                float subDt = dt / loops;
+                float subDtFactor = 60f * subDt;
 
-                double gravityStrength = physics.GravityPerSecond / 60f * dtFactor;
-                motion.Y -= gravityStrength;
+                bool hitBlock = false;
+                bool hitEntity = false;
+                Vec3d hitPos = null;
 
-                Vec3d nextPos = new Vec3d(
-                    pos.X + motion.X * dtFactor,
-                    pos.Y + motion.Y * dtFactor,
-                    pos.Z + motion.Z * dtFactor);
-
-                BlockPos bpos = nextPos.AsBlockPos;
-                Block block = capi.World.BlockAccessor.GetBlock(bpos);
-
-                if (block != null && block.BlockId != 0 && block.CollisionBoxes != null && block.CollisionBoxes.Length > 0)
+                for (int s = 0; s < loops; s++)
                 {
-                    bool solidHit = false;
-                    foreach (var box in block.CollisionBoxes)
-                    {
-                        Cuboidd worldBox = box.ToDouble().Translate(bpos.X, bpos.Y, bpos.Z);
-                        Cuboidd projBox = new Cuboidd(
-                            nextPos.X - 0.05, nextPos.Y - 0.05, nextPos.Z - 0.05,
-                            nextPos.X + 0.05, nextPos.Y + 0.05, nextPos.Z + 0.05);
+                    motion.Scale(Math.Pow(physics.AirDragValue, subDt * 33));
 
-                        if (worldBox.IntersectsOrTouches(projBox))
+                    double gravityStrength = (physics.GravityPerSecond / 60f * subDtFactor) + Math.Max(0, -0.015f * motion.Y * subDtFactor); ;
+                    motion.Y -= gravityStrength;
+
+                    Vec3d nextPos = new Vec3d(
+                        pos.X + motion.X * subDtFactor,
+                        pos.Y + motion.Y * subDtFactor,
+                        pos.Z + motion.Z * subDtFactor);
+
+                    // Detección de bloques
+                    BlockPos bpos = nextPos.AsBlockPos;
+                    Block block = capi.World.BlockAccessor.GetBlock(bpos);
+
+                    if (block != null && block.BlockId != 0 && block.CollisionBoxes != null && block.CollisionBoxes.Length > 0)
+                    {
+                        foreach (var box in block.CollisionBoxes)
                         {
-                            solidHit = true;
-                            break;
+                            Cuboidd worldBox = box.ToDouble().Translate(bpos.X, bpos.Y, bpos.Z);
+                            Cuboidd projBox = new Cuboidd(
+                                nextPos.X - 0.05, nextPos.Y - 0.05, nextPos.Z - 0.05,
+                                nextPos.X + 0.05, nextPos.Y + 0.05, nextPos.Z + 0.05);
+
+                            if (worldBox.IntersectsOrTouches(projBox))
+                            {
+                                hitBlock = true;
+                                hitPos = nextPos.Clone();
+                                break;
+                            }
                         }
                     }
 
-                    if (solidHit)
+                    if (hitBlock) break;
+
+                    // Detección de entidades
+                    Entity[] nearby = capi.World.GetEntitiesAround(
+                        nextPos, 4f, 4f,
+                        e => e != player.Entity && e.IsInteractable && e is EntityAgent);
+
+                    if (nearby?.Length > 0)
                     {
-                        result.ImpactPoint = nextPos.Clone();
-                        result.Points.Add(nextPos.Clone());
-                        break;
+                        foreach (Entity entity in nearby)
+                        {
+                            Cuboidf cb = entity.CollisionBox;
+                            Vec3d ePos = entity.Pos.XYZ;
+
+                            Cuboidd worldBox = new Cuboidd(
+                                ePos.X + cb.X1,
+                                ePos.Y + cb.Y1,
+                                ePos.Z + cb.Z1,
+                                ePos.X + cb.X2,
+                                ePos.Y + cb.Y2,
+                                ePos.Z + cb.Z2);
+
+                            Cuboidd projBox = new Cuboidd(
+                                nextPos.X - 0.05, nextPos.Y - 0.05, nextPos.Z - 0.05,
+                                nextPos.X + 0.05, nextPos.Y + 0.05, nextPos.Z + 0.05);
+
+                            if (worldBox.IntersectsOrTouches(projBox))
+                            {
+                                hitEntity = true;
+                                hitPos = nextPos.Clone();
+                                break;
+                            }
+                        }
                     }
+
+                    if (hitEntity) break;
+
+                    pos = nextPos;
                 }
 
-                float vertThreshold = 1f;
-                Entity[] nearby = capi.World.GetEntitiesAround(
-                    nextPos, 1f, vertThreshold,
-                    e => e != player.Entity && e.IsInteractable && e is EntityAgent);
+                // Agregar punto después de todos los substeps
+                result.Points.Add(pos.Clone());
 
-                if (nearby?.Length > 0)
+                if (hitBlock || hitEntity)
                 {
-                    result.ImpactPoint = nextPos.Clone();
-                    result.HitEntity = true;
-                    result.Points.Add(nextPos.Clone());
+                    result.ImpactPoint = hitPos;
+                    result.HitEntity = hitEntity;
+                    result.Points.Add(hitPos);
                     break;
                 }
-
-                pos = nextPos;
-                result.Points.Add(pos.Clone());
             }
 
             return result;

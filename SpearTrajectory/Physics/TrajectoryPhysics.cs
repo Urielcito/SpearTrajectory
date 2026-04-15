@@ -19,24 +19,19 @@ public class TrajectoryPhysics
         {
             ItemBow => new TrajectoryPhysics // Vanilla Bow
             {
-                Velocity = 0.95f,
-                GravityPerSecond = GlobalConstants.GravityPerSecond * 0.75,
-                AirDragValue = 1 - (1 - GlobalConstants.AirDragAlways) * 0.25,
+                Velocity = 1f,
             },
             ItemSpear => new TrajectoryPhysics // Vanilla Spear
             {
-                Velocity = 0.62f,
-                GravityPerSecond = GlobalConstants.GravityPerSecond * 0.75,
+                Velocity = 0.65f,
             },
             _ when item is not ItemSpear && item.FirstCodePart(0) is "spear" => new TrajectoryPhysics // CO Spear
             {
-                Velocity = 0.56f,
-                GravityPerSecond = GlobalConstants.GravityPerSecond * 0.75,
+                Velocity = 0.56f
             },
             _ when isCOItem && item.FirstCodePart(0) is "javelin" => new TrajectoryPhysics // CO Javelin
             {
                 Velocity = 0.685f,
-                GravityPerSecond = GlobalConstants.GravityPerSecond * 0.75,
             },
             _ when item is not ItemBow && item.Code.SecondCodePart().Contains("crude") => new TrajectoryPhysics // CO Crude Bow
             {

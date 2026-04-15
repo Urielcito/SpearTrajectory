@@ -72,13 +72,27 @@ namespace SpearTrajectory.Patches
 
             double newPitch = currentPitch + pitchOffset;
             double newYaw = currentYaw + yawOffset;
+            newYaw = ParallaxCorrection(newYaw, 20, 0.2);
             double cosPitch = Math.Cos(newPitch);
-
             return new Vec3d(
                 cosPitch * Math.Sin(newYaw),
                -Math.Sin(newPitch),
                 cosPitch * Math.Cos(newYaw)
             ).Normalize();
+        }
+        public static double ParallaxCorrection(double yaw, double distance, double offset)
+        {
+            FastVec3d initialDirection = new(Math.Cos(yaw), 0, Math.Sin(yaw));
+            FastVec3d intersection = initialDirection.Mul(distance);
+            FastVec3d right = new(Math.Sin(yaw), 0, -Math.Cos(yaw));
+            FastVec3d start = right.Mul(offset);
+            //FastVec3d correctedDirection = (intersection - start).Normalize();
+            FastVec3d correctedDirection = intersection;
+            correctedDirection.X -= start.X;
+            correctedDirection.Y -= start.Y;
+            correctedDirection.Z -= start.Z;
+            correctedDirection.Normalize();
+            return Math.Atan2(correctedDirection.Z, correctedDirection.X);
         }
     }
 }
