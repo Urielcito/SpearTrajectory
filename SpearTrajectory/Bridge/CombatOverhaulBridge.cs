@@ -26,6 +26,11 @@ namespace SpearTrajectory.Bridge
         private Type _bowItemType;
         private Type _meleeWeaponItemType;
 
+        private object _reticleRenderer;
+        private PropertyInfo _aimingStateProp;
+        private object _noneState; // WeaponAimingState.None cacheado
+        private object _savedAimingState;
+
         public CombatOverhaulBridge(ICoreClientAPI capi)
         {
             _capi = capi;
@@ -78,6 +83,23 @@ namespace SpearTrajectory.Bridge
             Assembly itemAsm = overhaullibAsm;
             _bowItemType = itemAsm.GetType("CombatOverhaul.Implementations.BowItem");
             _meleeWeaponItemType = itemAsm.GetType("CombatOverhaul.Implementations.MeleeWeapon");
+
+            // ReticleRenderer
+            PropertyInfo reticleRendererProp = coSystemType.GetProperty("ReticleRenderer", BindingFlags.Public | BindingFlags.Instance);
+            if (reticleRendererProp != null)
+            {
+                _reticleRenderer = reticleRendererProp.GetValue(_coSystem);
+
+                Type reticleType = overhaullibAsm.GetType("CombatOverhaul.RangedSystems.Aiming.ReticleRenderer");
+                if (reticleType != null)
+                {
+                    _aimingStateProp = reticleType.GetProperty("AimingState", BindingFlags.Public | BindingFlags.Instance);
+
+                    Type aimingStateEnum = overhaullibAsm.GetType("CombatOverhaul.RangedSystems.Aiming.WeaponAimingState");
+                    if (aimingStateEnum != null)
+                        _noneState = Enum.Parse(aimingStateEnum, "None");
+                }
+            }
 
             IsPresent = true;
             IsCOPresent = combatoverhaulAsm != null;
@@ -201,6 +223,36 @@ namespace SpearTrajectory.Bridge
             catch { }
 
             return null;
+        }
+        public bool IsReticleVisible()
+        {
+            if (_reticleRenderer == null || _aimingStateProp == null || _noneState == null) return false;
+
+            try
+            {
+                object currentState = _aimingStateProp.GetValue(_reticleRenderer);
+                return !currentState.Equals(_noneState);
+            }
+            catch { return false; }
+        }
+        public void SetReticleVisible(bool visible)
+        {
+            if (_reticleRenderer == null || _aimingStateProp == null || _noneState == null) return;
+            _capi.Logger.Warning("Cambiando reticle visibility..");
+            try
+            {
+                if (!visible)
+                {
+                    _savedAimingState = _aimingStateProp.GetValue(_reticleRenderer);
+                    _aimingStateProp.SetValue(_reticleRenderer, _noneState);
+                }
+                else if (_savedAimingState != null)
+                {
+                    _aimingStateProp.SetValue(_reticleRenderer, _savedAimingState);
+                    _savedAimingState = null;
+                }
+            }
+            catch { }
         }
     }
 }

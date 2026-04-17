@@ -148,7 +148,8 @@ namespace SpearTrajectory.Solver
             {
                 if (i <= SkipPoints) continue;
 
-                int cycle = (i - 1 + dashOffset) % (DashLength + GapLength);
+                int LineGapLength = (TrajectoryModSystem.Config?.SolidLine == true) ? 0 : GapLength;
+                int cycle = (i - 1 + dashOffset) % (DashLength + LineGapLength);
                 if (cycle >= DashLength) continue;
 
                 Vec3d a = points[i - 1] - originVec;

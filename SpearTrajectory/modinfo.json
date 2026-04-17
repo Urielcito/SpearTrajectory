@@ -7,7 +7,7 @@
         "Kuroshiro"
     ],
     "description": "Overhauls projectile accuracy, draws a trajectory for most of them",
-    "version": "1.1.6",
+    "version": "1.1.7",
     "dependencies": {
         "game": "1.21.0"
     }

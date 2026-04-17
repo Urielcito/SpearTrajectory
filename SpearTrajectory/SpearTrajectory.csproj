@@ -77,7 +77,7 @@
 </ItemGroup>
 
 <ItemGroup>
-  <Folder Include="assets\" />
+  <Folder Include="assets\speartrajectory\shaders\" />
 </ItemGroup>
 
 </Project>

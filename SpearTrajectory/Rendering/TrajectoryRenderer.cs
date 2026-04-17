@@ -47,8 +47,8 @@ namespace SpearTrajectory.Rendering
             for (int i = 0; i < points.Count; i++)
             {
                 if (i <= SkipPoints) continue;
-
-                int cycle = (i - 1 + dashOffset) % (DashLength + GapLength);
+                int LineGapLength = (TrajectoryModSystem.Config?.SolidLine == true) ? 0 : GapLength;
+                int cycle = (i - 1 + dashOffset) % (DashLength + LineGapLength);
                 if (cycle >= DashLength) continue;
 
                 Vec3d a = points[i - 1] - originVec;
@@ -74,16 +74,10 @@ namespace SpearTrajectory.Rendering
             Vec3d[] offsets = { oRight, oRight.Clone().Mul(-1), oUp, oUp.Clone().Mul(-1) };
             foreach (Vec3d off in offsets)
             {
-                capi.Render.RenderLine(origin,
-                    (float)(a.X + off.X), (float)(a.Y + off.Y), (float)(a.Z + off.Z),
-                    (float)(b.X + off.X), (float)(b.Y + off.Y), (float)(b.Z + off.Z),
-                    colorBlack);
+                capi.Render.RenderLine(origin,(float)(a.X + off.X), (float)(a.Y + off.Y), (float)(a.Z + off.Z),(float)(b.X + off.X), (float)(b.Y + off.Y), (float)(b.Z + off.Z),colorBlack);
             }
 
-            capi.Render.RenderLine(origin,
-                (float)a.X, (float)a.Y, (float)a.Z,
-                (float)b.X, (float)b.Y, (float)b.Z,
-                colorWhite);
+            capi.Render.RenderLine(origin,(float)a.X, (float)a.Y, (float)a.Z,(float)b.X, (float)b.Y, (float)b.Z,colorWhite);
         }
     }
 
@@ -172,8 +166,11 @@ namespace SpearTrajectory.Rendering
     //main class
     public class TrajectoryRenderer : IRenderer
     {
-        private const float CircleSpeed = 1.5f;
+        private const float CircleSpeed = 3f;
         private const float DashSpeed = 8f;
+        private float _circlePulseAccum = 5f;
+        private const float PulseSpeed = 5f;
+        private const float PulseAmount = 0.25f; //25%
 
         public double RenderOrder => 0.5;
         public int RenderRange => 999;
@@ -194,7 +191,7 @@ namespace SpearTrajectory.Rendering
 
             var bridge = TrajectoryModSystem.COBridge;
             bool isCOItem = bridge != null && bridge.IsCOItem(activeItem);
-
+            
             if (isCOItem)
             {
                 //to only draw when aiming is possible through stances (damn you spear)
@@ -204,13 +201,12 @@ namespace SpearTrajectory.Rendering
             {
                 // vanilla
                 if (!capi.Input.MouseButton.Right) return;
-
                 string code = activeItem?.FirstCodePart(0);
                 if (code is not "spear" and not "javelin" and not "bow" and not "stone") //nifty right
                     return;
             }
-
-            
+            if(bridge != null && bridge.IsReticleVisible())
+                bridge.SetReticleVisible(false);
             var (startPos, dirVec, speed) = PatchAimingData.GetRealProjectileDirection(
     player.Entity as EntityAgent);
 
@@ -234,12 +230,16 @@ namespace SpearTrajectory.Rendering
             }
 
             AdvanceAnimations(deltaTime, result.HitEntity);
-
+            
             if (result.ImpactPoint != null && TrajectoryModSystem.Config?.ToggleTrajectoryCircle == true)
             {
+                float pulseMultiplier = (1f + PulseAmount * (float)Math.Sin(_circlePulseAccum)*2f)*2f;
+                float pulsedRadius = radius;
+                if (result.HitEntity)
+                    pulsedRadius *= pulseMultiplier;
                 ImpactCircleRenderer.Draw(
                     capi, origin, result.ImpactPoint,
-                    radius, player.Entity.LocalEyePos, player,
+                    pulsedRadius, player.Entity.LocalEyePos, player,
                     result.HitEntity, circleAngleOffset, outlineSize, opacity);
             }
             if (result.ImpactPoint != null && TrajectoryModSystem.Config?.ToggleImpactParticle == true)
@@ -291,11 +291,19 @@ namespace SpearTrajectory.Rendering
 
         private void SpawnImpactParticle(TrajectoryResult result)
         {
+            var cfg = TrajectoryModSystem.Config;
+            double[] rgb = ColorUtil.Hex2Doubles(cfg.ImpactParticleColor ?? "#f9e909");
+            int[] hsv = ColorUtil.RgbToHsvInts(
+                (int)(rgb[0] * 255),
+                (int)(rgb[1] * 255),
+                (int)(rgb[2] * 255)
+            );
+
             AdvancedParticleProperties props = new AdvancedParticleProperties();
             props.basePos = result.ImpactPoint;
             props.Quantity = NatFloat.createUniform(0, 15);
             props.LifeLength = NatFloat.createUniform(0.2f, 0.05f);
-            props.Size = NatFloat.createUniform(0.06f, 0.03f);
+            props.Size = NatFloat.createUniform(cfg.ImpactParticleSize, 0.03f);
             props.GravityEffect = NatFloat.createUniform(0.3f, 0.2f);
             props.Velocity = new NatFloat[]
             {
@@ -305,10 +313,10 @@ namespace SpearTrajectory.Rendering
             };
             props.HsvaColor = new NatFloat[]
             {
-                NatFloat.createUniform(30, 15),   
-                NatFloat.createUniform(220, 35),
-                NatFloat.createUniform(255, 0),
-                NatFloat.createUniform(220, 35)
+                NatFloat.createUniform(hsv[0], 15f),  // H
+                NatFloat.createUniform(hsv[1], 35f),  // S
+                NatFloat.createUniform(hsv[2], 0f),   // V
+                NatFloat.createUniform(220f, 35f)     // A fijo
             };
             props.VertexFlags = 128;
             props.ParticleModel = EnumParticleModel.Quad;
@@ -318,12 +326,17 @@ namespace SpearTrajectory.Rendering
         }
         private void AdvanceAnimations(float deltaTime, bool hitEntity)
         {
+            
             circleAngleOffset += deltaTime * CircleSpeed;
             if (circleAngleOffset > Math.PI * 2)
                 circleAngleOffset -= (float)(Math.PI * 2);
 
             if (hitEntity)
             {
+                
+                _circlePulseAccum += deltaTime * PulseSpeed;
+                if (_circlePulseAccum > Math.PI * 4)
+                    _circlePulseAccum -= (float)(Math.PI * 4);
                 dashAnimAccum += deltaTime * DashSpeed;
                 if (dashAnimAccum >= 6f)
                     dashAnimAccum -= 6f;
