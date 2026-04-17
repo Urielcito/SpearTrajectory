@@ -18,7 +18,6 @@ namespace SpearTrajectory.Physics
     IPlayer player)
         {
             var result = new TrajectoryResult();
-
             Vec3d pos = startPos.Clone();
             Vec3d motion = direction.Clone().Mul(physics.Velocity);
 

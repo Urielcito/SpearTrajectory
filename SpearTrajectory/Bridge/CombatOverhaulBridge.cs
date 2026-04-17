@@ -1,9 +1,16 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using ConfigLib;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices.JavaScript;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
+using Vintagestory.Client.NoObf;
+using YamlDotNet.Serialization;
 
 namespace SpearTrajectory.Bridge
 {
@@ -30,6 +37,7 @@ namespace SpearTrajectory.Bridge
         private PropertyInfo _aimingStateProp;
         private object _noneState; // WeaponAimingState.None cacheado
         private object _savedAimingState;
+
 
         public CombatOverhaulBridge(ICoreClientAPI capi)
         {
@@ -62,7 +70,6 @@ namespace SpearTrajectory.Bridge
             }
 
             if (overhaullibAsm == null) { capi.Logger.Warning("[ST] No se encontró overhaullib."); return; }
-
             Type coSystemType = overhaullibAsm.GetType("CombatOverhaul.CombatOverhaulSystem");
             if (coSystemType == null) return;
 
@@ -253,6 +260,40 @@ namespace SpearTrajectory.Bridge
                 }
             }
             catch { }
+        }
+        public float GetSpearsThrownDistance()
+        {
+            try
+            {
+                string path = Path.Combine(_capi.GetOrCreateDataPath("ModConfig"), "combatoverhaul.yaml");
+                
+                if (!File.Exists(path))
+                    return 1f;
+
+                string yamlText = File.ReadAllText(path);
+
+                // YAML -> objeto .NET
+                var deserializer = new DeserializerBuilder().Build();
+                object yamlObject = deserializer.Deserialize<object>(yamlText);
+
+                // objeto -> JSON string
+                string jsonText = JsonConvert.SerializeObject(yamlObject);
+                var deserializedJson = JsonConvert.DeserializeObject(jsonText);
+                // JSON -> JsonObject (Vintage Story)
+                JToken token = JToken.FromObject(yamlObject);
+                JsonObject json = new JsonObject(token);
+
+                float value = json["spears_thrown_distance"].AsFloat(0f);
+                float valueX10 = value * 10;
+                float decimalPart = valueX10 - MathF.Round(valueX10);
+                float finalValue = MathF.Round(value) + decimalPart;
+                return finalValue;
+            }
+            catch (Exception e)
+            {
+                _capi.Logger.Warning("[ST] Error leyendo combatoverhaul.yaml: " + e.Message);
+                return 1f;
+            }
         }
     }
 }

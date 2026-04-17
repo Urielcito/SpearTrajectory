@@ -1,4 +1,5 @@
-﻿using Vintagestory.API.Common;
+﻿using System;
+using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.GameContent;
 
@@ -12,7 +13,21 @@ public class TrajectoryPhysics
     public int MaxSteps = 1000;
     public bool UseCOPhysics = true;
 
-    public static TrajectoryPhysics For(Item item, bool isCOItem)
+    private static TrajectoryPhysics ApplyCO(TrajectoryPhysics phys, float factor)
+    {
+        if (factor <= 0f) return phys;
+
+        // ✅ gravedad directa
+        phys.GravityPerSecond /= factor;
+
+        // ✅ drag correcto (exponencial)
+        double k = -Math.Log(phys.AirDragValue);
+        k /= factor;
+        phys.AirDragValue = Math.Exp(-k);
+
+        return phys;
+    }
+    public static TrajectoryPhysics For(Item item, bool isCOItem, float distanceFactor)
     {
         if (item is null) return new TrajectoryPhysics();
 
@@ -28,11 +43,15 @@ public class TrajectoryPhysics
                 Velocity = 0.65f,
                 UseCOPhysics = false
             },
-            _ when item is not ItemSpear && item.FirstCodePart(0) is "spear" => new TrajectoryPhysics // CO Spear
-            {
-                Velocity = 0.56f
-
-            },
+            _ when item is not ItemSpear && item.FirstCodePart(0) is "spear" => ApplyCO(
+    new TrajectoryPhysics
+    {
+        Velocity = 0.56f,
+        GravityPerSecond = GlobalConstants.GravityPerSecond * 0.75,
+        AirDragValue = 1 - (1 - GlobalConstants.AirDragAlways) * 0.25,
+    },
+    distanceFactor
+),
             _ when isCOItem && item.FirstCodePart(0) is "javelin" => new TrajectoryPhysics // CO Javelin
             {
                 Velocity = 0.685f,
@@ -55,5 +74,6 @@ public class TrajectoryPhysics
             },
             _ => new TrajectoryPhysics()
         };
+
     }
 }

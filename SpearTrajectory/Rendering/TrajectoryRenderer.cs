@@ -191,7 +191,9 @@ namespace SpearTrajectory.Rendering
 
             var bridge = TrajectoryModSystem.COBridge;
             bool isCOItem = bridge != null && bridge.IsCOItem(activeItem);
-            
+            float distanceFactor = 0f;
+            if (bridge != null)
+                distanceFactor = bridge.GetSpearsThrownDistance();
             if (isCOItem)
             {
                 //to only draw when aiming is possible through stances (damn you spear)
@@ -210,7 +212,7 @@ namespace SpearTrajectory.Rendering
             var (startPos, dirVec, speed) = PatchAimingData.GetRealProjectileDirection(
     player.Entity as EntityAgent);
 
-            var physics = TrajectoryPhysics.For(activeItem, isCOItem);
+            var physics = TrajectoryPhysics.For(activeItem, isCOItem, distanceFactor);
             float outlineSize = TrajectoryModSystem.Config?.OutlineSize ?? 0.02f;
             float radius = TrajectoryModSystem.Config?.ImpactCircleRadius ?? 0.7f;
             int opacity = 255;
