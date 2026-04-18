@@ -11,159 +11,6 @@ using SpearTrajectory.Systems;
 
 namespace SpearTrajectory.Rendering
 {
-    //where simulation results are stored
-    public class TrajectoryResult
-    {
-        public List<Vec3d> Points { get; } = new();
-        public Vec3d ImpactPoint { get; set; }
-        public bool HitEntity { get; set; }
-    }
-    //draws the trajectory lines
-    public static class TrajectoryLineRenderer
-    {
-        private const int DashLength = 3;
-        private const int GapLength = 3;
-        private const int SkipPoints = 3;
-
-        public static void Draw(
-    ICoreClientAPI capi,
-    List<Vec3d> points,
-    BlockPos origin,
-    Vec3f viewDirection,
-    float outlineSize,
-    bool hitEntity = false,
-    int dashOffset = 0)
-        {
-            double[] entityRgb = ColorUtil.Hex2Doubles(TrajectoryModSystem.Config?.EntityHitColor ?? "#FF0000");
-            int colorWhite = hitEntity
-                ? ColorUtil.ToRgba(255, (int)(entityRgb[2] * 255), (int)(entityRgb[1] * 255), (int)(entityRgb[0] * 255))
-                : ColorUtil.ToRgba(255, 255, 255, 255);
-            int colorBlack = ColorUtil.ToRgba(255, 0, 0, 0);
-
-            Vec3d vd = new Vec3d(viewDirection.X, viewDirection.Y, viewDirection.Z); // ya no se usa para offset
-
-            Vec3d originVec = origin.ToVec3d();
-
-            for (int i = 0; i < points.Count; i++)
-            {
-                if (i <= SkipPoints) continue;
-                int LineGapLength = (TrajectoryModSystem.Config?.SolidLine == true) ? 0 : GapLength;
-                int cycle = (i - 1 + dashOffset) % (DashLength + LineGapLength);
-                if (cycle >= DashLength) continue;
-
-                Vec3d a = points[i - 1] - originVec;
-                Vec3d b = points[i] - originVec;
-
-                DrawOutlinedLine(capi, origin, a, b, vd, colorWhite, colorBlack, outlineSize);
-            }
-        }
-
-        private static void DrawOutlinedLine(
-    ICoreClientAPI capi,
-    BlockPos origin,
-    Vec3d a, Vec3d b,
-    Vec3d viewDir,        // reemplaza oRight/oUp
-    int colorWhite, int colorBlack,
-    float outlineSize)
-        {
-            Vec3d segDir = (b - a).Normalize();
-            Vec3d tempUp = Math.Abs(segDir.Y) < 0.99 ? new Vec3d(0, 1, 0) : new Vec3d(1, 0, 0);
-            Vec3d oRight = segDir.Cross(tempUp).Normalize().Mul(outlineSize);
-            Vec3d oUp = segDir.Cross(oRight).Normalize().Mul(outlineSize);
-
-            Vec3d[] offsets = { oRight, oRight.Clone().Mul(-1), oUp, oUp.Clone().Mul(-1) };
-            foreach (Vec3d off in offsets)
-            {
-                capi.Render.RenderLine(origin,(float)(a.X + off.X), (float)(a.Y + off.Y), (float)(a.Z + off.Z),(float)(b.X + off.X), (float)(b.Y + off.Y), (float)(b.Z + off.Z),colorBlack);
-            }
-
-            capi.Render.RenderLine(origin,(float)a.X, (float)a.Y, (float)a.Z,(float)b.X, (float)b.Y, (float)b.Z,colorWhite);
-        }
-    }
-
-    //draws the impact circle
-    public static class ImpactCircleRenderer
-    {
-        private const int DashLength = 4;
-        private const int GapLength = 4;
-        private const int Segments = 64;
-
-        public static void Draw(
-            ICoreClientAPI capi,
-            BlockPos origin,
-            Vec3d impactPoint,
-            float radius,
-            Vec3d eyePos,
-            IPlayer player,
-            bool hitEntity,
-            float angleOffset,
-            float outlineSize,
-            int opacity)
-        {
-            Vec3d camPos = player.Entity.Pos.XYZ.AddCopy(0, eyePos.Y, 0);
-            Vec3d toImpact = impactPoint.SubCopy(camPos).Normalize();
-            Vec3d worldUp = new Vec3d(0, 1, 0);
-            Vec3d billRight = toImpact.Cross(worldUp).Normalize();
-            Vec3d billUp = billRight.Cross(toImpact).Normalize();
-
-            double[] entityRgb = ColorUtil.Hex2Doubles(TrajectoryModSystem.Config?.EntityHitColor ?? "#FF0000");
-            int colorFill = hitEntity
-                ? ColorUtil.ToRgba(opacity, (int)(entityRgb[2] * 255), (int)(entityRgb[1] * 255), (int)(entityRgb[0] * 255))
-                : ColorUtil.ToRgba(opacity, 255, 255, 255);
-            int colorBlack = ColorUtil.ToRgba(opacity, 0, 0, 0);
-
-            float usedAngleOffset = hitEntity ? angleOffset : 0f;
-
-            DrawDottedCircle(capi, origin, impactPoint, radius,
-                billUp, billRight, colorFill, colorBlack, outlineSize, usedAngleOffset);
-
-        }
-
-        private static void DrawDottedCircle(
-            ICoreClientAPI capi,
-            BlockPos origin,
-            Vec3d center,
-            float radius,
-            Vec3d up, Vec3d right,
-            int colorFill, int colorBlack,
-            float outlineSize,
-            float angleOffset)
-        {
-            Vec3d originVec = origin.ToVec3d();
-
-            for (int i = 1; i <= Segments; i++)
-            {
-                int cycle = (i - 1) % (DashLength + GapLength);
-                if (cycle >= DashLength) continue;
-
-                float angleA = (float)((i - 1) * 2 * Math.PI / Segments) + angleOffset;
-                float angleB = (float)(i * 2 * Math.PI / Segments) + angleOffset;
-
-                Vec3d a = center + right * Math.Cos(angleA) * radius + up * Math.Sin(angleA) * radius - originVec;
-                Vec3d b = center + right * Math.Cos(angleB) * radius + up * Math.Sin(angleB) * radius - originVec;
-
-                Vec3d tangent = (b - a).Normalize();
-                Vec3d towardCenter = (center - originVec - a).Normalize();
-                Vec3d outlineOff = tangent.Cross(towardCenter).Normalize().Mul(outlineSize);
-
-                capi.Render.RenderLine(origin,
-                    (float)(a.X + outlineOff.X), (float)(a.Y + outlineOff.Y), (float)(a.Z + outlineOff.Z),
-                    (float)(b.X + outlineOff.X), (float)(b.Y + outlineOff.Y), (float)(b.Z + outlineOff.Z),
-                    colorBlack);
-                capi.Render.RenderLine(origin,
-                    (float)(a.X - outlineOff.X), (float)(a.Y - outlineOff.Y), (float)(a.Z - outlineOff.Z),
-                    (float)(b.X - outlineOff.X), (float)(b.Y - outlineOff.Y), (float)(b.Z - outlineOff.Z),
-                    colorBlack);
-
-                capi.Render.RenderLine(origin,
-                    (float)a.X, (float)a.Y, (float)a.Z,
-                    (float)b.X, (float)b.Y, (float)b.Z,
-                    colorFill);
-            }
-        }
-    }
-
-    //main class
     public class TrajectoryRenderer : IRenderer
     {
         private const float CircleSpeed = 3f;
@@ -207,10 +54,10 @@ namespace SpearTrajectory.Rendering
                 if (code is not "spear" and not "javelin" and not "bow" and not "stone") //nifty right
                     return;
             }
-            if(bridge != null && bridge.IsReticleVisible())
+            if (bridge != null && bridge.IsReticleVisible())
                 bridge.SetReticleVisible(false);
             var (startPos, dirVec, speed) = PatchAimingData.GetRealProjectileDirection(
-    player.Entity as EntityAgent);
+                player.Entity as EntityAgent);
 
             var physics = TrajectoryPhysics.For(activeItem, isCOItem, distanceFactor);
             float outlineSize = TrajectoryModSystem.Config?.OutlineSize ?? 0.02f;
@@ -223,19 +70,19 @@ namespace SpearTrajectory.Rendering
             Vec3f viewDir = player.Entity.SidedPos.GetViewVector();
 
             BlockPos origin = startPos.AsBlockPos;
-            
+
             if (TrajectoryModSystem.Config?.ToggleTrajectoryLine == true)
             {
                 TrajectoryLineRenderer.Draw(
-                capi, result.Points, origin, viewDir,
-                outlineSize, result.HitEntity, -(int)dashAnimAccum);
+                    capi, result.Points, origin, viewDir,
+                    outlineSize, result.HitEntity, -(int)dashAnimAccum);
             }
 
             AdvanceAnimations(deltaTime, result.HitEntity);
-            
+
             if (result.ImpactPoint != null && TrajectoryModSystem.Config?.ToggleTrajectoryCircle == true)
             {
-                float pulseMultiplier = (1f + PulseAmount * (float)Math.Sin(_circlePulseAccum)*2f)*2f;
+                float pulseMultiplier = (1f + PulseAmount * (float)Math.Sin(_circlePulseAccum) * 2f) * 2f;
                 float pulsedRadius = radius;
                 if (result.HitEntity)
                     pulsedRadius *= pulseMultiplier;
@@ -326,16 +173,15 @@ namespace SpearTrajectory.Rendering
 
             capi.World.SpawnParticles(props);
         }
+
         private void AdvanceAnimations(float deltaTime, bool hitEntity)
         {
-            
             circleAngleOffset += deltaTime * CircleSpeed;
             if (circleAngleOffset > Math.PI * 2)
                 circleAngleOffset -= (float)(Math.PI * 2);
 
             if (hitEntity)
             {
-                
                 _circlePulseAccum += deltaTime * PulseSpeed;
                 if (_circlePulseAccum > Math.PI * 4)
                     _circlePulseAccum -= (float)(Math.PI * 4);

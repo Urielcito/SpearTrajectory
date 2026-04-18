@@ -1,5 +1,4 @@
-﻿using ConfigLib;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
@@ -266,28 +265,26 @@ namespace SpearTrajectory.Bridge
             try
             {
                 string path = Path.Combine(_capi.GetOrCreateDataPath("ModConfig"), "combatoverhaul.yaml");
-                
+
                 if (!File.Exists(path))
                     return 1f;
 
-                string yamlText = File.ReadAllText(path);
+                foreach (string line in File.ReadAllLines(path))
+                {
+                    string trimmed = line.Trim();
+                    if (!trimmed.StartsWith("spears_thrown_distance:")) continue;
 
-                // YAML -> objeto .NET
-                var deserializer = new DeserializerBuilder().Build();
-                object yamlObject = deserializer.Deserialize<object>(yamlText);
+                    string[] parts = trimmed.Split(':');
+                    if (parts.Length < 2) continue;
 
-                // objeto -> JSON string
-                string jsonText = JsonConvert.SerializeObject(yamlObject);
-                var deserializedJson = JsonConvert.DeserializeObject(jsonText);
-                // JSON -> JsonObject (Vintage Story)
-                JToken token = JToken.FromObject(yamlObject);
-                JsonObject json = new JsonObject(token);
+                    float.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float value);
+                    float valueX10 = value * 10;
+                    float decimalPart = valueX10 - MathF.Round(valueX10);
+                    float finalValue = MathF.Round(value) + decimalPart;
+                    return finalValue;
+                }
 
-                float value = json["spears_thrown_distance"].AsFloat(0f);
-                float valueX10 = value * 10;
-                float decimalPart = valueX10 - MathF.Round(valueX10);
-                float finalValue = MathF.Round(value) + decimalPart;
-                return finalValue;
+                return 1f;
             }
             catch (Exception e)
             {
