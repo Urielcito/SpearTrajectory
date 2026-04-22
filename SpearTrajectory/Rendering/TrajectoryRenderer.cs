@@ -105,17 +105,24 @@ namespace SpearTrajectory.Rendering
                 Entity[] candidates = capi.World.GetEntitiesAround(
                     result.ImpactPoint, searchRadius, searchRadius,
                     e => e != player.Entity && e.IsInteractable && e is EntityAgent);
+                
 
                 if (candidates != null)
                 {
                     foreach (Entity e in candidates)
                     {
-                        double dist = result.ImpactPoint.SquareDistanceTo(e.Pos.XYZ);
-                        if (dist < nearestDist)
+                        if (e is not null)
                         {
-                            nearestDist = dist;
-                            nearestTarget = e;
+                            double dist = result.ImpactPoint.SquareDistanceTo(e.Pos.XYZ);
+                            if (dist < nearestDist)
+                            {
+                                nearestDist = dist;
+                                nearestTarget = e;
+                            }
                         }
+                        else
+                            return;
+                        
                     }
                 }
             }
